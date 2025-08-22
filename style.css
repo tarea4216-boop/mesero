@@ -1,0 +1,310 @@
+/* ===== Reset básico ===== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: #ffeef5; /* fondo rosado suave */
+  color: #333;
+  padding: 20px;
+}
+
+.container {
+  max-width: 600px;
+  margin: auto;
+}
+
+h1 {
+  text-align: center;
+  color: #d63384; /* título rosado fuerte */
+  margin-bottom: 20px;
+}
+
+.card {
+  background: #fff0f6; /* tarjeta rosada clara */
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 30px;
+}
+
+input, button, select {
+  padding: 12px;
+  margin: 10px 0;
+  width: 100%;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+}
+
+button {
+  background-color: #f06292; /* botón rosado medio */
+  color: #fff;
+  border: none;
+  font-weight: bold;
+  transition: background 0.3s ease;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #ec407a; /* botón hover */
+}
+
+.button-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.logout {
+  background-color: #d81b60; /* botón cerrar sesión */
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: auto;
+  padding: 10px 20px;
+  border-radius: 8px;
+}
+
+.logout:hover {
+  background-color: #ad1457;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0;
+  background: #ffe0ec; /* lista rosada */
+  border-radius: 8px;
+  border: 1px solid #f8bbd0;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+li {
+  padding: 10px;
+  border-bottom: 1px solid #f8bbd0;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+li:hover {
+  background-color: #f8bbd0;
+}
+
+#totalTexto {
+  font-size: 18px;
+  font-weight: bold;
+  color: #880e4f;
+  text-align: right;
+  margin-top: 10px;
+}
+
+@media (max-width: 600px) {
+  .button-group {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==== MODAL DIVIDIR CUENTA ==== */
+#modalDividir {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.5);
+  top: 0; left: 0; right: 0; bottom: 0;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  width: 95%;
+  max-width: 700px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* Resumen de productos */
+#productosResumen {
+  margin-bottom: 15px;
+  padding: 10px;
+  background: #fce4ec;
+  border-radius: 8px;
+  border: 1px solid #f8bbd0;
+}
+
+.resumen-producto {
+  padding: 6px 0;
+  font-size: 0.95em;
+}
+
+/* Caja por persona */
+.formulario-persona {
+  background: #fff8fb;
+  border: 1px solid #f8bbd0;
+  padding: 12px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+/* Encabezado persona */
+.persona-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.persona-header strong {
+  font-size: 1.05em;
+  color: #ad1457;
+}
+
+.subtotal {
+  font-size: 0.9em;
+  color: #880e4f;
+  font-weight: bold;
+}
+
+/* Instrucciones */
+.persona-instruccion {
+  font-size: 0.85em;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+/* Producto por persona */
+.producto-pago {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid #f3e5f5;
+}
+
+.producto-info {
+  flex: 1;
+  font-size: 0.9em;
+}
+
+.producto-input input {
+  width: 80px;
+  padding: 5px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.producto-btn .pagar-btn {
+  background: #43a047;
+  color: #fff;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85em;
+}
+
+.producto-btn .pagar-btn:hover {
+  background: #388e3c;
+}
+
+.producto-confirm {
+  flex: 0 0 120px;
+  font-size: 0.8em;
+}
+
+.pago-confirmado {
+  color: #2e7d32;
+  font-weight: bold;
+}
+
+/* Botón deshacer */
+.deshacer-btn {
+  background: transparent;
+  border: none;
+  color: #1565c0;
+  cursor: pointer;
+  font-size: 0.85em;
+  margin-left: 4px;
+}
+
+.deshacer-btn:hover {
+  text-decoration: underline;
+}
+
+/* Método de pago */
+.metodo-pago {
+  margin-top: 10px;
+  font-size: 0.9em;
+}
+
+.metodo-pago select {
+  margin-left: 6px;
+  padding: 5px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.efectivo-wrap {
+  display: none;
+  margin-top: 8px;
+}
+
+.efectivo-wrap input {
+  margin-left: 6px;
+  width: 120px;
+}
+
+.vuelto {
+  color: #555;
+  display: block;
+  margin-top: 6px;
+}
+
+/* Botones principales del modal */
+.modal-btn {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  font-size: 16px;
+  font-weight: bold;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+#btnConfirmarDivision {
+  background-color: #4CAF50;
+}
+
+#btnPausarDivision {
+  background-color: #2196F3;
+}
+
+#btnCancelarDivision {
+  background-color: #f44336;
+}
+
+/* Responsivo */
+@media (max-width: 600px) {
+  .producto-pago {
+    flex-wrap: wrap;
+  }
+  .producto-info {
+    flex: 100%;
+  }
+  .producto-input,
+  .producto-btn,
+  .producto-confirm {
+    flex: auto;
+  }
+}

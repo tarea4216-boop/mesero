@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Restaurante el Camarón de Oro - Mesero</title>
+  <link rel="stylesheet" href="style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body>
+
+  <div class="container">
+    <h1>🍤 Restaurante El Camarón de Oro</h1>
+
+    <!-- 🔐 Login -->
+    <section id="loginSection" class="card">
+      <h2>Iniciar sesión</h2>
+      <input type="email" id="emailInput" placeholder="Correo electrónico" />
+      <input type="password" id="passwordInput" placeholder="Contraseña" />
+      <button id="loginBtn">Entrar</button>
+    </section>
+
+    <!-- ✅ Panel de Mesero -->
+    <section id="meseroSection" class="card" style="display: none;">
+      <h2>Panel del Mesero</h2>
+
+      <div class="form-group">
+        <input id="mesaInput" type="number" placeholder="Número de mesa" />
+        <input id="buscarInput" type="text" placeholder="Buscar producto" />
+      </div>
+
+      <ul id="listaProductos"></ul>
+
+      <div id="totalTexto">Total: S/ 0.00</div>
+
+      <div class="button-group">
+        <button id="guardarBtn">Guardar Pedido</button>
+        <button id="verBoletaBtn">Ver Boleta</button>
+        <button id="editarBtn">Editar Pedido</button>
+        <button id="completarBtn">Completar Pedido</button>
+        <button id="verPendientesBtn">Ver Pendientes</button>
+        <button id="enviarWhatsappBtn">Enviar por WhatsApp</button>
+        <button id="logoutBtn" class="logout">Cerrar sesión</button>
+        <button id="dividirCuentaBtn">Dividir Cuenta</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- ✅ MODAL DIVIDIR CUENTA -->
+  <div id="modalDividir">
+    <div class="modal-content">
+      <h3>Dividir Cuenta</h3>
+      <div id="contenedorFormasPago"></div>
+      <button id="btnConfirmarDivision" class="modal-btn">✅ Confirmar</button>
+      <button id="btnPausarDivision" class="modal-btn">⏸️ Pausar</button>
+      <button id="btnCancelarDivision" class="modal-btn" onclick="document.getElementById('modalDividir').style.display='none'">Cancelar</button>
+    </div>
+  </div>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>
+
+
+
+
+
+
