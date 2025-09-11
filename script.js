@@ -221,24 +221,48 @@ async function guardarPedido() {
     const referencia = ref(db, "pedidos/" + mesa);
     const snapshot = await get(referencia);
 
+    let pedidoFinal = [];
+    let meseroAsignado = currentMeseroEmail;
+
     if (snapshot.exists()) {
-      showToast("Ya existe un pedido para esta mesa.", "error");
-      return;
+      const datos = snapshot.val();
+      const existentes = datos.items || [];
+      meseroAsignado = datos.mesero || currentMeseroEmail;
+
+      // 🔹 Fusionar los productos nuevos con los existentes
+      pedidoFinal = [...existentes];
+      pedidoNuevo.forEach(nuevo => {
+        const encontrado = pedidoFinal.find(p =>
+          p.nombre === nuevo.nombre && p.comentario === nuevo.comentario
+        );
+        if (encontrado) {
+          encontrado.cantidad += nuevo.cantidad;
+        } else {
+          pedidoFinal.push(nuevo);
+        }
+      });
+    } else {
+      // 🔹 Si no existía pedido previo, solo guardar el nuevo
+      pedidoFinal = pedidoNuevo;
     }
 
-    const total = pedidoNuevo.reduce(
+    // 🔹 Calcular el total acumulado
+    const total = pedidoFinal.reduce(
       (acc, item) => acc + (item.precio || 0) * (item.cantidad || 1),
       0
     );
 
+    // 🔹 Guardar en Firebase
     await set(referencia, {
       mesa,
       total,
-      items: pedidoNuevo,
-      mesero: currentMeseroEmail
+      items: pedidoFinal,
+      mesero: meseroAsignado,
+      actualizadoPor: currentMeseroEmail,
+      actualizadoEn: Date.now()
     });
 
-    showToast(`✅ Pedido de mesa ${mesa} guardado correctamente`, "success");
+    showToast(`✅ Pedido de mesa ${mesa} actualizado correctamente`, "success");
     limpiarCampos();
     delete pedidosLocales[mesa];
   } catch (err) {
@@ -246,6 +270,7 @@ async function guardarPedido() {
     showToast("Error al guardar el pedido.", "error");
   }
 }
+
 
 // Listener único de Guardar Pedido (fuera de la función)
 const _guardarBtn = document.getElementById("guardarBtn");
