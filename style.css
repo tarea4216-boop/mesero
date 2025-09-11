@@ -5,10 +5,27 @@
   padding: 0;
 }
 
+:root {
+  /* 🎨 Paleta de colores */
+  --rosa-fondo: #ffeef5;
+  --rosa-claro: #fff0f6;
+  --rosa-lista: #ffe0ec;
+  --rosa-medio: #f06292;
+  --rosa-hover: #ec407a;
+  --rosa-fuerte: #d63384;
+  --rosa-oscuro: #ad1457;
+  --verde: #43a047;
+  --verde-hover: #388e3c;
+  --morado: #880e4f;
+  --gris-texto: #333;
+  --gris-secundario: #666;
+  --borde: #f8bbd0;
+}
+
 body {
   font-family: 'Segoe UI', sans-serif;
-  background: #ffeef5; /* fondo rosado suave */
-  color: #333;
+  background: var(--rosa-fondo);
+  color: var(--gris-texto);
   padding: 20px;
 }
 
@@ -19,12 +36,12 @@ body {
 
 h1 {
   text-align: center;
-  color: #d63384; /* título rosado fuerte */
+  color: var(--rosa-fuerte);
   margin-bottom: 20px;
 }
 
 .card {
-  background: #fff0f6; /* tarjeta rosada clara */
+  background: var(--rosa-claro);
   padding: 20px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -41,7 +58,7 @@ input, button, select {
 }
 
 button {
-  background-color: #f06292; /* botón rosado medio */
+  background-color: var(--rosa-medio);
   color: #fff;
   border: none;
   font-weight: bold;
@@ -49,9 +66,7 @@ button {
   cursor: pointer;
 }
 
-button:hover {
-  background-color: #ec407a; /* botón hover */
-}
+button:hover { background-color: var(--rosa-hover); }
 
 .button-group {
   display: grid;
@@ -60,7 +75,7 @@ button:hover {
 }
 
 .logout {
-  background-color: #d81b60; /* botón cerrar sesión */
+  background-color: var(--rosa-oscuro);
   position: fixed;
   bottom: 20px;
   right: 20px;
@@ -69,242 +84,533 @@ button:hover {
   border-radius: 8px;
 }
 
-.logout:hover {
-  background-color: #ad1457;
-}
+.logout:hover { background-color: #8e0e3e; }
 
 ul {
   list-style: none;
   padding: 0;
   margin: 10px 0;
-  background: #ffe0ec; /* lista rosada */
+  background: var(--rosa-lista);
   border-radius: 8px;
-  border: 1px solid #f8bbd0;
+  border: 1px solid var(--borde);
   max-height: 200px;
   overflow-y: auto;
 }
 
 li {
   padding: 10px;
-  border-bottom: 1px solid #f8bbd0;
+  border-bottom: 1px solid var(--borde);
   cursor: pointer;
   transition: background 0.2s ease;
 }
 
-li:hover {
-  background-color: #f8bbd0;
-}
+li:hover { background-color: var(--borde); }
 
 #totalTexto {
   font-size: 18px;
   font-weight: bold;
-  color: #880e4f;
+  color: var(--morado);
   text-align: right;
   margin-top: 10px;
 }
 
+/* Responsive botones */
 @media (max-width: 600px) {
-  .button-group {
-    grid-template-columns: 1fr;
-  }
+  .button-group { grid-template-columns: 1fr; }
 }
 
-/* ==== MODAL DIVIDIR CUENTA ==== */
+/* ==== MODAL DIVIDIR CUENTA (Versión Final Limpia) ==== */
 #modalDividir {
   display: none;
   position: fixed;
   z-index: 9999;
-  background: rgba(0, 0, 0, 0.5);
-  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  inset: 0;
   justify-content: center;
   align-items: center;
 }
 
-.modal-content {
+#modalDividir .modal-content {
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh;
+  overflow: hidden; /* scroll vive en #contenedorFormasPago */
   background: #fff;
   padding: 20px;
-  border-radius: 12px;
-  width: 95%;
-  max-width: 700px;
-  max-height: 90vh;
-  overflow-y: auto;
+  border-radius: 14px;
+  width: 96%;
+  max-width: 980px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  animation: fadeInModal 0.4s ease;
 }
 
-/* Resumen de productos */
-#productosResumen {
-  margin-bottom: 15px;
-  padding: 10px;
-  background: #fce4ec;
-  border-radius: 8px;
-  border: 1px solid #f8bbd0;
-}
-
-.resumen-producto {
-  padding: 6px 0;
-  font-size: 0.95em;
-}
-
-/* Caja por persona */
-.formulario-persona {
-  background: #fff8fb;
-  border: 1px solid #f8bbd0;
+/* Área scrolleable */
+#contenedorFormasPago {
+  flex: 1;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
   padding: 12px;
-  border-radius: 10px;
-  margin-bottom: 12px;
+}
+
+/* Encabezado */
+#contenedorFormasPago > .division-resumen {
+  grid-column: 1 / -1;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: #e7f1ff;
+  border-bottom: 2px solid #c3d9f7;
+  padding: 12px 14px;
+  border-radius: 10px 10px 0 0;
+}
+
+/* Tarjetas */
+.division-persona-card {
+  background: #f4f9ff;
+  border: 1px solid #c3d9f7;
+  border-radius: 12px;
+  padding: 14px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.05);
 }
 
-/* Encabezado persona */
-.persona-header {
+/* Barra de acciones */
+#contenedorFormasPago > .division-actions {
+  grid-column: 1 / -1;
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  background: #fff;
+  border-top: 1px solid #e0e0e0;
+  padding: 10px;
   display: flex;
-  justify-content: space-between;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Botones */
+#contenedorFormasPago > .division-actions button,
+#contenedorFormasPago .division-btn,
+#contenedorFormasPago .deshacer-btn {
+  width: auto;
+  min-width: 130px;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  #contenedorFormasPago { grid-template-columns: 1fr; }
+}
+
+/* ==== MODALES PERSONALIZADOS ==== */
+.custom-modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
   align-items: center;
-  margin-bottom: 6px;
+  background: rgba(0,0,0,0.5);
+  z-index: 99999;
+  animation: fadeInModal 0.3s ease;
 }
 
-.persona-header strong {
-  font-size: 1.05em;
-  color: #ad1457;
+.custom-modal {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  text-align: center;
+  animation: slideUp 0.3s ease;
 }
 
-.subtotal {
-  font-size: 0.9em;
-  color: #880e4f;
-  font-weight: bold;
+.custom-modal-message { margin-bottom: 15px; font-size: 1.1em; color: #333; }
+.custom-modal-actions { display: flex; justify-content: center; gap: 10px; margin-top: 15px; }
+.custom-modal-btn {
+  background: var(--rosa-medio);
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.custom-modal-btn:hover { background: var(--rosa-hover); }
+.custom-modal-btn.cancel { background: #aaa; }
+.custom-modal-btn.cancel:hover { background: #888; }
+.custom-modal-input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 1em;
+  margin-top: 8px;
 }
 
-/* Instrucciones */
-.persona-instruccion {
-  font-size: 0.85em;
-  color: #666;
+/* Animaciones */
+@keyframes fadeInModal {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes slideUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* ==== MODAL GENERAL PARA PEDIDOS Y BOLETAS ==== */
+.pedidos-modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0,0,0,0.5);
+  z-index: 10000;
+  animation: fadeInModal 0.3s ease;
+}
+
+.pedidos-modal-content {
+  background: #fff;
+  padding: 20px;
+  border-radius: 14px;
+  width: 95%;
+  max-width: 900px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+  animation: slideUp 0.3s ease;
+  text-align: center;
+}
+
+/* ==== TARJETAS DE PEDIDO ==== */
+.pedidos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+  max-height: 65vh;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.pedido-card {
+  background: var(--rosa-claro);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: left;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+  transition: transform 0.2s, box-shadow 0.2s;
+  animation: fadeInModal 0.4s ease;
+}
+
+.pedido-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.2);
+}
+
+.pedido-card h3 { margin-bottom: 6px; color: var(--rosa-fuerte); }
+.pedido-mesero { font-size: 0.9em; color: var(--gris-secundario); margin-bottom: 10px; }
+.pedido-producto { padding: 4px 0; border-bottom: 1px dashed var(--borde); }
+.pedido-total { margin-top: 10px; font-weight: bold; color: var(--morado); text-align: right; }
+
+/* ==== FORMULARIOS DE EDITAR Y AGREGAR ==== */
+.editar-producto-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--rosa-lista);
+  padding: 8px;
+  border-radius: 8px;
   margin-bottom: 8px;
 }
 
-/* Producto por persona */
-.producto-pago {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 0;
-  border-bottom: 1px solid #f3e5f5;
-}
-
-.producto-info {
-  flex: 1;
-  font-size: 0.9em;
-}
-
-.producto-input input {
-  width: 80px;
-  padding: 5px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-}
-
-.producto-btn .pagar-btn {
-  background: #43a047;
+.editar-producto-btn {
+  background: var(--rosa-medio);
   color: #fff;
   border: none;
   padding: 6px 10px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 0.85em;
-}
-
-.producto-btn .pagar-btn:hover {
-  background: #388e3c;
-}
-
-.producto-confirm {
-  flex: 0 0 120px;
-  font-size: 0.8em;
-}
-
-.pago-confirmado {
-  color: #2e7d32;
-  font-weight: bold;
-}
-
-/* Botón deshacer */
-.deshacer-btn {
-  background: transparent;
-  border: none;
-  color: #1565c0;
-  cursor: pointer;
-  font-size: 0.85em;
-  margin-left: 4px;
-}
-
-.deshacer-btn:hover {
-  text-decoration: underline;
-}
-
-/* Método de pago */
-.metodo-pago {
-  margin-top: 10px;
-  font-size: 0.9em;
-}
-
-.metodo-pago select {
   margin-left: 6px;
-  padding: 5px;
-  border-radius: 6px;
+  transition: background 0.2s;
+}
+.editar-producto-btn:hover { background: var(--rosa-hover); }
+.editar-producto-btn.delete { background: #e74c3c; }
+.editar-producto-btn.delete:hover { background: #c0392b; }
+
+.editar-producto-cantidad { font-weight: bold; margin: 0 8px; }
+
+/* ==== BOTÓN WHATSAPP ==== */
+#enviarWhatsappBtn { background: #25d366; color: #fff; }
+#enviarWhatsappBtn:hover { background: #1ebe5d; }
+
+/* ==== Scroll personalizado ==== */
+.pedidos-grid::-webkit-scrollbar,
+.pedidos-modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+.pedidos-grid::-webkit-scrollbar-thumb,
+.pedidos-modal-content::-webkit-scrollbar-thumb {
+  background: var(--rosa-medio);
+  border-radius: 4px;
+}
+/* ==== MODAL DIVIDIR CUENTA - DISEÑO MEJORADO ==== */
+#modalDividir .modal-content {
+  border-radius: 18px;
+  background: #fff;
+  overflow: hidden;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+}
+
+/* Header del modal */
+#modalDividir .modal-content h3 {
+  background: linear-gradient(135deg, #42a5f5, #ec407a);
+  color: #fff;
+  margin: 0;
+  padding: 18px 22px;
+  font-size: 1.4rem;
+  font-weight: bold;
+  text-align: center;
+}
+
+/* Encabezado de resumen (Pendiente fijo) */
+.division-resumen {
+  background: #f1f7ff;
+  border: 1px solid #cfdff7;
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* Tarjeta persona */
+.division-persona-card {
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #dbe5f0;
+  padding: 16px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.division-persona-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.15);
+}
+.division-persona-card h4 {
+  margin-bottom: 8px;
+  color: #3949ab;
+}
+
+/* Inputs */
+.division-persona-card input,
+.division-persona-card select {
+  border-radius: 8px;
   border: 1px solid #ccc;
-}
-
-.efectivo-wrap {
-  display: none;
-  margin-top: 8px;
-}
-
-.efectivo-wrap input {
-  margin-left: 6px;
-  width: 120px;
-}
-
-.vuelto {
-  color: #555;
-  display: block;
-  margin-top: 6px;
-}
-
-/* Botones principales del modal */
-.modal-btn {
+  padding: 10px;
+  font-size: 0.95rem;
   width: 100%;
-  padding: 12px;
-  margin-top: 10px;
-  font-size: 16px;
+}
+
+/* Botones dentro de la tarjeta */
+.division-persona-card button {
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+.division-persona-card .division-btn {
+  background: #f06292;
+  color: #fff;
+}
+.division-persona-card .division-btn:hover {
+  background: #ec407a;
+}
+.division-persona-card .deshacer-btn {
+  background: #ddd;
+  color: #333;
+}
+.division-persona-card .deshacer-btn:hover {
+  background: #bbb;
+}
+
+/* Footer con acciones */
+.division-actions {
+  background: #fafafa;
+  border-top: 1px solid #e0e0e0;
+  padding: 14px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.division-actions button {
+  padding: 12px 18px;
+  border-radius: 10px;
   font-weight: bold;
-  color: white;
-  border: none;
-  border-radius: 6px;
+  font-size: 1rem;
   cursor: pointer;
 }
+.division-actions .pausar {
+  background: #ffca28;
+  color: #333;
+}
+.division-actions .confirmar {
+  background: #43a047;
+  color: #fff;
+}
+.division-actions .cancelar {
+  background: #e0e0e0;
+  color: #444;
+}
+.division-actions .pausar:hover { background: #f4b400; }
+.division-actions .confirmar:hover { background: #388e3c; }
+.division-actions .cancelar:hover { background: #bdbdbd; }
 
-#btnConfirmarDivision {
-  background-color: #4CAF50;
+/* ==== TOAST PERSONALIZADO ==== */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 100000;
 }
 
-#btnPausarDivision {
-  background-color: #2196F3;
+.toast {
+  padding: 12px 18px;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 500;
+  min-width: 200px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+  animation: slideIn 0.4s ease, fadeOut 0.4s ease 3.5s forwards;
+}
+.toast.success { background: #43a047; }
+.toast.error { background: #e53935; }
+.toast.info { background: #1e88e5; }
+
+@keyframes slideIn {
+  from { transform: translateX(120%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes fadeOut {
+  to { opacity: 0; transform: translateX(120%); }
 }
 
-#btnCancelarDivision {
-  background-color: #f44336;
+/* 📱 Ajustes responsive para Dividir Cuenta */
+@media (max-width: 768px) {
+  #contenedorFormasPago {
+    grid-template-columns: 1fr; /* una sola columna */
+    gap: 14px;
+    padding: 10px;
+  }
+
+  .division-resumen {
+    position: relative; /* ya no sticky en pantallas pequeñas */
+    top: auto;
+    margin-bottom: 10px;
+    border-radius: 12px;
+    font-size: 1rem;
+  }
+
+  .division-persona-card {
+    padding: 14px;
+    font-size: 0.95rem;
+  }
+
+  .division-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .division-actions button {
+    width: 100%;
+    font-size: 1rem;
+  }
 }
 
-/* Responsivo */
-@media (max-width: 600px) {
-  .producto-pago {
-    flex-wrap: wrap;
+/* ===== Ajustes finales responsive para modal "Dividir Cuenta" ===== */
+/* (coloca esto AL FINAL de tu admin/style CSS para que sobrescriba reglas previas) */
+
+@media (max-width: 900px) {
+  /* Forzamos una sola columna en pantallas pequeñas */
+  #contenedorFormasPago {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+    padding: 12px !important;
   }
-  .producto-info {
-    flex: 100%;
+
+  /* Quitamos sticky del encabezado-resumen (misma especificidad que la regla original) */
+  #contenedorFormasPago > .division-resumen {
+    position: static !important;
+    top: auto !important;
+    z-index: 2 !important;
+    margin-bottom: 12px !important;
+    box-shadow: none !important;
   }
-  .producto-input,
-  .producto-btn,
-  .producto-confirm {
-    flex: auto;
+
+  /* Quitamos sticky del footer de acciones para que no se superponga */
+  #contenedorFormasPago > .division-actions {
+    position: static !important;
+    bottom: auto !important;
+    z-index: 2 !important;
+    padding: 10px 8px !important;
   }
+
+  /* Aseguramos que las tarjetas se apilen sin superposición */
+  .division-persona-card {
+    margin-bottom: 8px !important;
+  }
+
+  /* Hacemos que los botones del footer ocupen todo el ancho para tocar más fácil */
+  #contenedorFormasPago > .division-actions button,
+  .division-actions .pausar,
+  .division-actions .confirmar,
+  .division-actions .cancelar {
+    width: 100% !important;
+    min-width: unset !important;
+  }
+
+  /* Reducimos ancho del modal para móviles para que no quede tan ancho */
+  #modalDividir .modal-content {
+    width: 96% !important;
+    max-width: 480px !important;
+    padding: 12px !important;
+    border-radius: 12px !important;
+  }
+
+  /* Aseguramos que la cabecera del modal no tape contenido */
+  #modalDividir .modal-content h3 {
+    padding: 14px 12px !important;
+    font-size: 1.15rem !important;
+  }
+
+  /* Si necesitas que el header se mantenga visible (sticky),
+     usar position: sticky solo si no tapa las tarjetas; 
+     aquí lo desactivamos en móviles para evitar superposición */
+  #modalDividir .modal-content .division-resumen.sticky-enabled {
+    position: static !important;
+  }
+}
+
+/* Opcional: micro-ajuste para pantallas muy pequeñas (<=420px) */
+@media (max-width: 420px) {
+  #modalDividir .modal-content {
+    max-width: 98% !important;
+    padding: 10px !important;
+  }
+  .division-persona-card { padding: 12px !important; }
+  .division-resumen { font-size: 0.95rem !important; }
 }
