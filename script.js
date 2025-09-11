@@ -61,6 +61,31 @@ let productos = [];
 let pedidosLocales = {};
 let total = 0;
 
+let audioPedidoListo;
+
+function inicializarSonidoPedidoListo() {
+  if (!audioPedidoListo) {
+    audioPedidoListo = new Audio("noti.mp3"); // 📂 tu archivo de sonido
+  }
+
+  // 🔓 "Desbloquea" el sonido ejecutándolo en silencio al primer click
+  audioPedidoListo.muted = true;
+  audioPedidoListo.play().then(() => {
+    audioPedidoListo.pause();
+    audioPedidoListo.currentTime = 0;
+    audioPedidoListo.muted = false;
+    console.log("🎵 Sonido pedido listo desbloqueado");
+  }).catch(err => console.warn("No se pudo inicializar sonido:", err));
+}
+
+function reproducirSonidoPedidoListo() {
+  if (audioPedidoListo) {
+    audioPedidoListo.play().catch(err => console.warn("⚠️ No se pudo reproducir:", err));
+  }
+}
+
+
+
 function actualizarUI(user) {
   if (user) {
     loginSection.style.display = "none";
@@ -78,46 +103,45 @@ onAuthStateChanged(auth, (user) => {
   if (user) {
     const uid = user.uid;
     const rolRef = ref(db, 'roles/' + uid);
-    get(rolRef).then((snapshot) => {
-      if (snapshot.exists() && snapshot.val() === 'mesero') {
-        actualizarUI(user);
-      } else {
-        alert("🚫 Acceso denegado: No tienes el rol de mesero.");
-        signOut(auth);
-      }
+    get(rolRef).then(async (snapshot) => {
+ if (snapshot.exists() && snapshot.val() === 'mesero') {
+  actualizarUI(user);
+} else {
+  showToast("🚫 Acceso denegado: No tienes el rol de mesero.", "error");
+  signOut(auth);
+}
+
     });
   } else {
     actualizarUI(null);
   }
 });
 
-loginBtn.addEventListener("click", () => {
+loginBtn.addEventListener("click", async () => {
   const email = emailInput.value.trim();
   const password = passwordInput.value;
 
   if (!email || !password) {
-    alert("Por favor ingresa email y contraseña.");
+    showToast("Por favor ingresa tu correo y contraseña.", "error");
     return;
   }
 
   signInWithEmailAndPassword(auth, email, password)
     .then(() => {
-      alert("✅ Inicio de sesión exitoso");
-      emailInput.value = "";
-      passwordInput.value = "";
+      showToast("¡Bienvenido!", "success");
     })
     .catch((error) => {
-      alert("❌ Error al iniciar sesión: " + error.message);
+      showToast("Credenciales incorrectas o usuario no encontrado.", "error");
     });
 });
 
-logoutBtn.addEventListener("click", () => {
+logoutBtn.addEventListener("click", async () => {
   signOut(auth)
     .then(() => {
-      alert("✅ Has cerrado sesión");
+      showToast("Sesión cerrada correctamente.", "info");
     })
     .catch((error) => {
-      alert("❌ Error al cerrar sesión: " + error.message);
+      showToast("Error al cerrar sesión.", "error");
     });
 });
 
@@ -129,12 +153,13 @@ function limpiarCampos() {
   total = 0;
 }
 
-function obtenerNumeroMesa() {
+async function obtenerNumeroMesa() {
   const mesa = mesaInput.value.trim();
-  if (!mesa) {
-    alert("⚠️ Ingresa el número de mesa");
-    return null;
-  }
+ if (!mesa) {
+  showToast("⚠️ Ingresa el número de mesa", "error");
+  return null;
+}
+
   return mesa;
 }
 
@@ -156,14 +181,14 @@ buscarInput.addEventListener("input", () => {
   });
 });
 
-function seleccionarProducto(producto) {
-  const mesa = obtenerNumeroMesa();
+async function seleccionarProducto(producto) {
+  const mesa = await obtenerNumeroMesa();
   if (!mesa) return;
 
-  const cantidad = prompt(`¿Cuántos "${producto.nombre}"?`);
+  const cantidad = await prompt(`¿Cuántos "${producto.nombre}"?`);
   if (!cantidad || isNaN(cantidad)) return;
 
-  const comentario = prompt("Comentario (opcional):") || "";
+  const comentario = await prompt("Comentario (opcional):") || "";
   const cant = parseInt(cantidad);
 
   if (!pedidosLocales[mesa]) pedidosLocales[mesa] = [];
@@ -179,111 +204,241 @@ function seleccionarProducto(producto) {
   actualizarTotal(mesa);
 }
 
-function guardarPedido() {
-  const mesa = obtenerNumeroMesa();
-  if (!mesa) return;
+async function guardarPedido() {
+  const mesa = mesaInput.value.trim();
+  if (!mesa) {
+    showToast("⚠️ Ingresa el número de mesa", "error");
+    return;
+  }
 
   const pedidoNuevo = pedidosLocales[mesa];
-  if (!pedidoNuevo || pedidoNuevo.length === 0) return alert("❗ No hay productos");
+  if (!pedidoNuevo || pedidoNuevo.length === 0) {
+    showToast("No hay productos en el pedido.", "error");
+    return;
+  }
 
-  const referencia = ref(db, "pedidos/" + mesa);
-  get(referencia).then(snapshot => {
-    let pedidoFinal = [];
-    let totalFinal = 0;
-    let creadoPor = currentMeseroEmail;
+  try {
+    const referencia = ref(db, "pedidos/" + mesa);
+    const snapshot = await get(referencia);
 
     if (snapshot.exists()) {
-      const dataAnterior = snapshot.val();
-      pedidoFinal = [...dataAnterior.items];
-      creadoPor = dataAnterior.mesero;
-
-      pedidoNuevo.forEach(nuevo => {
-        const existente = pedidoFinal.find(p => p.nombre === nuevo.nombre && p.comentario === nuevo.comentario);
-        if (existente) {
-          existente.cantidad += nuevo.cantidad;
-        } else {
-          pedidoFinal.push(nuevo);
-        }
-      });
-    } else {
-      pedidoFinal = [...pedidoNuevo];
+      showToast("Ya existe un pedido para esta mesa.", "error");
+      return;
     }
 
-    totalFinal = pedidoFinal.reduce((acc, item) => acc + item.precio * item.cantidad, 0);
+    const total = pedidoNuevo.reduce(
+      (acc, item) => acc + (item.precio || 0) * (item.cantidad || 1),
+      0
+    );
 
-    set(referencia, {
+    await set(referencia, {
       mesa,
-      total: totalFinal,
-      items: pedidoFinal,
-      mesero: creadoPor,
-      modificadoPor: currentMeseroEmail
-    }).then(() => {
-      alert(`✅ Pedido de mesa ${mesa} guardado correctamente`);
-      limpiarCampos();
-      delete pedidosLocales[mesa];
+      total,
+      items: pedidoNuevo,
+      mesero: currentMeseroEmail
     });
-  });
-}
 
-function verBoleta() {
-  const mesa = prompt("Número de mesa:");
-  if (!mesa) return;
-  const refMesa = ref(db, "pedidos/" + mesa);
-  get(refMesa).then(snapshot => {
-    if (!snapshot.exists()) return alert("❌ No hay pedido guardado");
-    const datos = snapshot.val();
-    let resumen = `Mesa ${mesa} (por ${datos.mesero}):\n\n`;
-    let totalLocal = 0;
-    datos.items.forEach((item, i) => {
-      const sub = item.precio * item.cantidad;
-      totalLocal += sub;
-      resumen += `${i + 1}. ${item.nombre} x${item.cantidad} = S/ ${sub.toFixed(2)}\n`;
-      if (item.comentario) resumen += `   (${item.comentario})\n`;
-    });
-    resumen += `\nTOTAL: S/ ${totalLocal.toFixed(2)}`;
-    alert(resumen);
+    showToast(`✅ Pedido de mesa ${mesa} guardado correctamente`, "success");
     limpiarCampos();
+    delete pedidosLocales[mesa];
+  } catch (err) {
+    console.error("Error en guardarPedido:", err);
+    showToast("Error al guardar el pedido.", "error");
+  }
+}
+
+// Listener único de Guardar Pedido (fuera de la función)
+const _guardarBtn = document.getElementById("guardarBtn");
+if (_guardarBtn && !_guardarBtn.dataset.listenerGuard) {
+  _guardarBtn.addEventListener("click", async () => {
+    await guardarPedido();
+    inicializarSonidoPedidoListo();
+  });
+  _guardarBtn.dataset.listenerGuard = "1";
+}
+
+
+
+async function verBoleta() {
+  const mesa = await prompt("Número de mesa:");
+  if (!mesa) return;
+  const refMesa = ref(db, "pedidos/" + mesa);
+  get(refMesa).then(async snapshot => {
+if (!snapshot.exists()) {
+  showToast("❌ No hay pedido guardado", "error");
+  limpiarCampos();
+  return;
+}
+
+    const datos = snapshot.val();
+    let html = `<div class="pedidos-modal-content">`;
+    html += `<div class="pedido-card">
+      <h3>Mesa ${mesa}</h3>
+      <div class="pedido-mesero">Mesero: ${datos.mesero}</div>
+      <div class="pedido-productos">`;
+    datos.items.forEach((item, i) => {
+      html += `<div class="pedido-producto">
+        <strong>${item.nombre}</strong> x${item.cantidad}
+        ${item.comentario ? `<span style="color:#ad1457;"> (${item.comentario})</span>` : ""}
+      </div>`;
+    });
+    html += `</div>
+      <div class="pedido-total">Total: S/ ${datos.items.reduce((acc, item) => acc + item.precio * item.cantidad, 0).toFixed(2)}</div>
+      </div>
+      <button class="custom-modal-btn" id="cerrarBoleta">Cerrar</button>
+      </div>`;
+
+    // Mostrar modal
+    const modal = document.getElementById("modalBoleta");
+    modal.innerHTML = html;
+    modal.className = "pedidos-modal-overlay";
+    modal.style.display = "flex";
+    document.getElementById("cerrarBoleta").onclick = () => {
+      modal.style.display = "none";
+      limpiarCampos();
+    };
   });
 }
 
-function editarPedido() {
-  const mesa = prompt("Mesa a editar:");
+async function editarPedido() {
+  const mesa = await prompt("Mesa a editar:");
   if (!mesa) return;
   const refMesa = ref(db, "pedidos/" + mesa);
-  get(refMesa).then(snapshot => {
-    if (!snapshot.exists()) return alert("❌ No hay pedido");
+  get(refMesa).then(async snapshot => {
+   if (!snapshot.exists()) return showToast("❌ No hay pedido", "error");
+
     const datos = snapshot.val();
-    const pedido = datos.items;
-    const seleccion = prompt(pedido.map((p, i) => `${i + 1}. ${p.nombre} x${p.cantidad}`).join("\n"));
-    const index = parseInt(seleccion) - 1;
-    if (isNaN(index) || index < 0 || index >= pedido.length) return;
-    const accion = prompt("+, -, x:");
-    if (accion === "+") pedido[index].cantidad++;
-    else if (accion === "-") {
-      pedido[index].cantidad--;
-      if (pedido[index].cantidad <= 0) pedido.splice(index, 1);
-    } else if (accion === "x") {
-      pedido.splice(index, 1);
-    }
-    set(refMesa, {
+    let pedido = datos.items;
+
+    // Construir el formulario visual
+    let html = `<div class="custom-modal-message"><strong>Editar pedido de mesa ${mesa}</strong></div>`;
+    html += `<div style="margin-bottom:16px;">`;
+    pedido.forEach((p, i) => {
+      html += `
+        <div class="editar-producto-row">
+          <span class="editar-producto-nombre"><strong>${p.nombre}</strong> ${p.comentario ? `<span style="color:#ad1457;">(${p.comentario})</span>` : ""}</span>
+          <button class="custom-modal-btn editar-producto-btn" data-action="minus" data-index="${i}">-</button>
+          <span class="editar-producto-cantidad">${p.cantidad}</span>
+          <button class="custom-modal-btn editar-producto-btn" data-action="plus" data-index="${i}">+</button>
+          <button class="custom-modal-btn editar-producto-btn delete" data-action="delete" data-index="${i}">🗑️</button>
+        </div>
+      `;
+    });
+    html += `</div>
+      <button class="custom-modal-btn" id="guardarCambiosPedido">Guardar cambios</button>
+      <button class="custom-modal-btn cancel" id="cancelarEdicionPedido">Cancelar</button>
+    `;
+
+    // Mostrar modal
+    const modal = createModal(html);
+
+    // Eventos para los botones
+    modal.querySelectorAll("button[data-action]").forEach(btn => {
+      btn.onclick = () => {
+        const idx = parseInt(btn.getAttribute("data-index"));
+        const action = btn.getAttribute("data-action");
+        if (action === "plus") {
+          pedido[idx].cantidad++;
+        } else if (action === "minus") {
+          if (pedido[idx].cantidad > 1) pedido[idx].cantidad--;
+        } else if (action === "delete") {
+          pedido.splice(idx, 1);
+        }
+        // Actualizar el modal con los nuevos valores
+        document.body.removeChild(modal);
+        editarPedidoRedraw(mesa, datos, pedido);
+      };
+    });
+
+    // Guardar cambios
+    modal.querySelector("#guardarCambiosPedido").onclick = async () => {
+await set(refMesa, {
+  mesa,
+  total: pedido.reduce((acc, i) => acc + i.precio * i.cantidad, 0),
+  items: pedido,
+  mesero: datos.mesero,
+  modificadoPor: currentMeseroEmail
+});
+document.body.removeChild(modal);
+showToast("✏ Pedido actualizado", "success");
+
+limpiarCampos();
+
+    };
+
+    // Cancelar edición
+    modal.querySelector("#cancelarEdicionPedido").onclick = () => {
+      document.body.removeChild(modal);
+    };
+  });
+}
+
+// Función auxiliar para redibujar el formulario tras cada cambio
+async function editarPedidoRedraw(mesa, datos, pedido) {
+  let html = `<div class="custom-modal-message"><strong>Editar pedido de mesa ${mesa}</strong></div>`;
+  html += `<div style="margin-bottom:16px;">`;
+
+pedido.forEach((p, i) => {
+  html += `
+    <div class="editar-producto-row">
+      <span class="editar-producto-nombre"><strong>${p.nombre}</strong> ${p.comentario ? `<span style="color:#ad1457;">(${p.comentario})</span>` : ""}</span>
+      <button class="custom-modal-btn editar-producto-btn" data-action="minus" data-index="${i}">-</button>
+      <span class="editar-producto-cantidad">${p.cantidad}</span>
+      <button class="custom-modal-btn editar-producto-btn" data-action="plus" data-index="${i}">+</button>
+      <button class="custom-modal-btn editar-producto-btn delete" data-action="delete" data-index="${i}">🗑️</button>
+    </div>
+  `;
+});
+
+
+  html += `</div>
+    <button class="custom-modal-btn" id="guardarCambiosPedido">Guardar cambios</button>
+    <button class="custom-modal-btn cancel" id="cancelarEdicionPedido">Cancelar</button>
+  `;
+
+  const modal = createModal(html);
+
+  modal.querySelectorAll("button[data-action]").forEach(btn => {
+    btn.onclick = () => {
+      const idx = parseInt(btn.getAttribute("data-index"));
+      const action = btn.getAttribute("data-action");
+      if (action === "plus") {
+        pedido[idx].cantidad++;
+      } else if (action === "minus") {
+        if (pedido[idx].cantidad > 1) pedido[idx].cantidad--;
+      } else if (action === "delete") {
+        pedido.splice(idx, 1);
+      }
+      document.body.removeChild(modal);
+      editarPedidoRedraw(mesa, datos, pedido);
+    };
+  });
+
+  modal.querySelector("#guardarCambiosPedido").onclick = async () => {
+    await set(ref(db, "pedidos/" + mesa), {
       mesa,
       total: pedido.reduce((acc, i) => acc + i.precio * i.cantidad, 0),
       items: pedido,
       mesero: datos.mesero,
       modificadoPor: currentMeseroEmail
-    }).then(() => {
-      alert("✏ Pedido actualizado");
-      limpiarCampos();
     });
-  });
+    document.body.removeChild(modal);
+ showToast("✏ Pedido actualizado", "success");
+
+    limpiarCampos();
+  };
+
+  modal.querySelector("#cancelarEdicionPedido").onclick = () => {
+    document.body.removeChild(modal);
+  };
 }
 
-function completarPedido() {
-  const mesa = prompt("Número de mesa a completar:");
+async function completarPedido() {
+  const mesa = await prompt("Número de mesa a completar:");
   if (!mesa) return;
   const refMesa = ref(db, "pedidos/" + mesa);
-  get(refMesa).then(snapshot => {
-    if (!snapshot.exists()) return alert("❌ No hay pedido");
+  get(refMesa).then(async snapshot => {
+  if (!snapshot.exists()) return showToast("❌ No hay pedido", "error");
     const pedido = snapshot.val();
     const timestamp = Date.now();
     const refHistorial = ref(db, "historial");
@@ -291,55 +446,80 @@ function completarPedido() {
       ...pedido,
       fecha: timestamp
     }).then(() => {
-      remove(refMesa).then(() => {
-        alert(`✅ Pedido de mesa ${mesa} completado y archivado`);
+      remove(refMesa).then(async () => {
+      showToast(`✅ Pedido de mesa ${mesa} completado y archivado`, "success");
         limpiarCampos();
       });
     });
   });
 }
 
-function verPedidosPendientes() {
+async function verPedidosPendientes() {
   const referencia = ref(db, "pedidos");
-  get(referencia).then(snapshot => {
-    if (!snapshot.exists()) return alert("📭 No hay pedidos pendientes");
+  get(referencia).then(async snapshot => {
+    if (!snapshot.exists()) {
+  showToast("📭 No hay pedidos pendientes", "info");
+  limpiarCampos();
+  return;
+}
+
     const pedidos = snapshot.val();
-    let resumen = "📋 Pedidos pendientes:\n\n";
+    let html = `<div class="pedidos-modal-content">`;
+    html += `<h2 style="color:#d63384;margin-bottom:18px;">Pedidos Pendientes</h2>`;
+    html += `<div class="pedidos-grid">`;
     for (const mesa in pedidos) {
-      resumen += `Mesa ${mesa} (por ${pedidos[mesa].mesero}):\n`;
+      html += `
+        <div class="pedido-card">
+          <h3>Mesa ${mesa}</h3>
+          <div class="pedido-mesero">Mesero: ${pedidos[mesa].mesero}</div>
+          <div class="pedido-productos">
+      `;
       pedidos[mesa].items.forEach(item => {
-        resumen += `  - ${item.nombre} x${item.cantidad}`;
-        if (item.comentario) resumen += ` (${item.comentario})`;
-        resumen += "\n";
+        html += `<div class="pedido-producto">
+          <strong>${item.nombre}</strong> x${item.cantidad}
+          ${item.comentario ? `<span style="color:#ad1457;"> (${item.comentario})</span>` : ""}
+        </div>`;
       });
-      resumen += `Total: S/ ${pedidos[mesa].total.toFixed(2)}\n\n`;
+      html += `</div>
+        <div class="pedido-total">Total: S/ ${pedidos[mesa].total.toFixed(2)}</div>
+        </div>
+      `;
     }
-    alert(resumen);
-    limpiarCampos();
+    html += `</div>`; // Cierra pedidos-grid
+    html += `<button class="custom-modal-btn" id="cerrarPedidosPendientes">Cerrar</button></div>`;
+
+    // Mostrar modal
+    const modal = document.getElementById("modalPedidosPendientes");
+    modal.innerHTML = html;
+    modal.className = "pedidos-modal-overlay";
+    modal.style.display = "flex";
+    document.getElementById("cerrarPedidosPendientes").onclick = () => {
+      modal.style.display = "none";
+      limpiarCampos();
+    };
   });
 }
 
-function enviarBoletaWhatsapp() {
-  const mesa = prompt("Número de mesa:");
-  const numero = prompt("Número de WhatsApp del cliente (sin +51):");
+async function enviarBoletaWhatsapp() {
+  const mesa = await prompt("Número de mesa:");
+  const numero = await prompt("Número de WhatsApp del cliente (sin +51):");
 
   // Validaciones básicas
-  if (!mesa || !numero || isNaN(numero)) {
-    return alert("❌ Número de mesa o WhatsApp no válidos.");
-  }
+if (!mesa || !numero || isNaN(numero)) {
+  return showToast("❌ Número de mesa o WhatsApp no válidos.", "error");
+}
 
   const refHistorial = ref(db, "historial");
 
-  get(refHistorial).then(snapshot => {
-    if (!snapshot.exists()) return alert("❌ No hay historial de pedidos");
+  get(refHistorial).then(async snapshot => {
+  if (!snapshot.exists()) return showToast("❌ No hay historial de pedidos", "error");
 
     const historial = Object.values(snapshot.val());
     const recientes = historial.filter(p => p.mesa === mesa && Date.now() - p.fecha < 180000);
 
-    if (recientes.length === 0) {
-      return alert("⚠️ No hay boleta reciente para esta mesa (menos de 3 min)");
-    }
-
+  if (recientes.length === 0) {
+  return showToast("⚠️ No hay boleta reciente para esta mesa (menos de 3 min)", "info");
+}
     const boleta = recientes[recientes.length - 1];
 
     // Construir mensaje
@@ -360,42 +540,46 @@ function enviarBoletaWhatsapp() {
 
 function cargarProductos() {
   const refProductos = ref(db, "productos");
-  get(refProductos).then(snapshot => {
-    if (!snapshot.exists()) return alert("❌ No hay productos cargados");
+  get(refProductos).then(async snapshot => {
+if (!snapshot.exists()) return showToast("❌ No hay productos cargados", "error");
+
     productos = Object.values(snapshot.val());
     lista.innerHTML = "";
   });
 }
-// ---------------------- DIVIDIR / PAUSAR / REANUDAR (mejorado: confirmación por producto) ----------------------
+
+// ---------------------- DIVIDIR / PAUSAR / REANUDAR (versión extendida y corregida) ----------------------
+
 // Estado global
 let estadoDivision = "activa";
 let datosDivisionTemporal = null;
-let currentDivision = null; // { pedido, mesa, num, originalProductTotals, saldoProductos, pagosConfirmados, confirmadosFlags }
+let currentDivision = null;
 
 // Función auxiliar: redondeo 2 decimales
 const round2 = (v) => Math.round((v + Number.EPSILON) * 100) / 100;
 
 // ✅ Función para finalizar división y guardar en historial
-// (Se supone que ya tienes esta función en el script global; si no, adapta la llamada)
-function finalizarDivision(pedido, mesa, formasPago) {
+async function finalizarDivision(pedido, mesa, formasPago) {
   const usuario = auth.currentUser;
-  if (!usuario) return alert("⚠️ No estás autenticado.");
+  if (!usuario) return showToast("⚠️ No estás autenticado.", "error");
+
+  const timestamp = Date.now();
 
   const registroHistorial = {
-    mesa: mesa,
-    pedido: pedido,
-    formasPago: formasPago,
-    fecha: new Date().toISOString(),
+    mesa,
+    total: pedido.total || pedido.items?.reduce((acc, i) => acc + i.precio * i.cantidad, 0) || 0,
+    items: pedido.items || pedido.productos || [],
+    formasPago,
+    fecha: timestamp,
     atendidoPor: usuario.email || usuario.uid
   };
 
-  const refHistorial = ref(db, "historial/" + mesa + "_" + Date.now());
-
-  set(refHistorial, registroHistorial)
+  const refHistorial = ref(db, "historial");
+  push(refHistorial, registroHistorial)
     .then(() => remove(ref(db, "pedidos/" + mesa)))
     .then(() => remove(ref(db, "divisionTemporal/" + mesa)))
     .then(() => {
-      alert("✅ División finalizada y guardada en historial.");
+      showToast("✅ División finalizada y guardada en historial.", "success");
       estadoDivision = "activa";
       datosDivisionTemporal = null;
       currentDivision = null;
@@ -403,17 +587,21 @@ function finalizarDivision(pedido, mesa, formasPago) {
     })
     .catch(err => {
       console.error("Error al finalizar división:", err);
-      alert("⚠️ Ocurrió un error al finalizar la división.");
+      showToast("⚠️ Ocurrió un error al finalizar la división.", "error");
     });
 }
 
+
 // Guardar división temporal (Firebase o local)
-function guardarDivisionTemporal(formasPagoTemp, pedido, mesa, num) {
+function guardarDivisionTemporal(pedido, mesa) {
+  if (!currentDivision) return;
   const payload = {
     pedido,
-    formasPagoTemp,
     mesa,
-    num,
+    num: currentDivision.num,
+    pagos: currentDivision.pagos,
+    metodo: currentDivision.metodo,
+    entregado: currentDivision.entregado,
     timestamp: Date.now()
   };
   const refTemp = ref(db, "divisionTemporal/" + mesa);
@@ -429,173 +617,211 @@ function guardarDivisionTemporal(formasPagoTemp, pedido, mesa, num) {
   });
 }
 
-// Mostrar formulario de división (con botones "Pagar" por producto)
-function mostrarFormularioDivision(pedido, mesa, invocacionDesdeFirebase = false, prefillFormas = null, numPrefill = null) {
+// Mostrar formulario de división
+async function mostrarFormularioDivision(pedido, mesa, datosGuardados = null) {
   const productos = pedido.items || pedido.productos || [];
-  if (!Array.isArray(productos) || productos.length === 0) return alert("No hay productos en el pedido.");
+if (!Array.isArray(productos) || productos.length === 0) return showToast("No hay productos en el pedido.", "error");
 
   // Determinar número de personas
   let num;
-  if (numPrefill && Number.isInteger(numPrefill) && numPrefill > 0) {
-    num = numPrefill;
+  if (datosGuardados?.num && Number.isInteger(datosGuardados.num) && datosGuardados.num > 0) {
+    num = datosGuardados.num;
   } else {
-    const partes = prompt("¿Entre cuántas personas dividirás la cuenta?");
+    const partes = await prompt("¿Entre cuántas personas dividirás la cuenta?");
     num = parseInt(partes);
-    if (!num || num < 1) return alert("Número no válido");
+  if (!num || num < 1) return showToast("Número no válido", "error");
   }
 
-  // Datos iniciales
+  // Calcular totales originales
   const originalProductTotals = productos.map(p =>
     round2((parseFloat(p.precio) || 0) * (parseInt(p.cantidad) || 1))
   );
-  let saldoProductos = originalProductTotals.slice();
 
-  const pagosConfirmados = Array.from({ length: num }, () => Array(productos.length).fill(0));
-  const confirmadosFlags = Array.from({ length: num }, () => Array(productos.length).fill(false));
+  // Estado centralizado
+  currentDivision = {
+    pedido,
+    mesa,
+    num,
+    productos,
+    originalProductTotals,
+    pagos: datosGuardados?.pagos || Array.from({ length: num }, () => Array(productos.length).fill(0)),
+    metodo: datosGuardados?.metodo || Array(num).fill("efectivo"),
+    entregado: datosGuardados?.entregado || Array(num).fill(null),
+  };
 
-  currentDivision = { pedido, mesa, num, originalProductTotals, saldoProductos, pagosConfirmados, confirmadosFlags };
-
+  // Contenedor
   const contenedor = document.getElementById("contenedorFormasPago");
-  if (!contenedor) return alert("No se encontró contenedor del modal.");
+if (!contenedor) return showToast("No se encontró contenedor del modal.", "error");
   contenedor.innerHTML = "";
 
-  // Resumen de productos
-  let resumenHtml = `<div id="productosResumen">`;
-  productos.forEach((p, j) => {
-    resumenHtml += `
-      <div class="resumen-producto">
-        <strong>${p.nombre}</strong> — Total: S/ ${originalProductTotals[j].toFixed(2)} —
-        <span id="prodSaldo_${j}">Restante: S/ ${saldoProductos[j].toFixed(2)}</span>
-      </div>`;
-  });
-  resumenHtml += `</div>`;
+  // Renderizar resumen inicial con TOTAL y PENDIENTE
+  let resumenHtml = `
+    <div class="division-resumen animate-fadein">
+      <h2>Dividir cuenta - Mesa ${mesa}</h2>
+      <div><strong>Total pedido:</strong> S/ ${originalProductTotals.reduce((a, b) => a + b, 0).toFixed(2)}</div>
+      <div><strong>Pendiente:</strong> S/ <span id="pendienteTotal">0.00</span></div>
+      <div class="division-productos-list">
+        ${productos.map((p, j) => `
+          <div class="division-producto-item">
+            <strong>${p.nombre}</strong> x${p.cantidad} — S/ ${originalProductTotals[j].toFixed(2)}
+          </div>
+        `).join("")}
+      </div>
+      <div class="division-instruccion">
+        <span>Indica cuánto pagará cada persona por cada producto.<br>
+        Presiona <b>Pagar</b> para reservar el monto.<br>
+        El botón <b>Confirmar división</b> se habilitará cuando todo esté pagado.</span>
+      </div>
+    </div>
+  `;
   contenedor.insertAdjacentHTML("beforeend", resumenHtml);
 
-  // Crear formulario por persona
+  // Crear tarjetas por persona
   for (let i = 0; i < num; i++) {
-    let rowHtml = `
-      <div class="formulario-persona" data-index="${i}">
-        <div class="persona-header">
-          <strong>Persona ${i + 1}</strong>
-          <div class="subtotal">Subtotal: S/ <span id="subtotal_${i}">0.00</span></div>
+    let cardHtml = `
+      <div class="division-persona-card animate-fadein" data-index="${i}">
+        <h4>Persona ${i + 1}</h4>
+        <div class="division-persona-productos">
+          ${productos.map((prod, j) => `
+            <div class="division-producto-row" id="row_${i}_${j}">
+              <span class="division-producto-nombre">${prod.nombre}</span>
+              <input type="number" min="0" step="0.01" id="pago_${i}_${j}" 
+                placeholder="0.00" class="division-input" value="${currentDivision.pagos[i][j] || ""}" />
+              <button id="btnPagar_${i}_${j}" class="division-btn">Pagar</button>
+              <span id="saldo_${j}" class="division-saldo pendiente"></span>
+              <span id="conf_${i}_${j}" class="division-confirm"></span>
+            </div>
+          `).join("")}
         </div>
-        <div class="persona-instruccion">
-          Ingrese cuánto pagará por cada producto y presione <em>Pagar</em> para reservar ese monto:
-        </div>
-    `;
-
-    productos.forEach((prod, j) => {
-      rowHtml += `
-        <div class="producto-pago">
-          <div class="producto-info">
-            <strong>${prod.nombre}</strong> — S/ ${(parseFloat(prod.precio) * (prod.cantidad || 1)).toFixed(2)}
-          </div>
-          <div class="producto-input">
-            <input type="number" min="0" step="0.01" id="pago_${i}_${j}" placeholder="0.00" />
-          </div>
-          <div class="producto-btn">
-            <button id="btnPagar_${i}_${j}" class="pagar-btn">Pagar</button>
-          </div>
-          <div class="producto-confirm">
-            <small id="conf_${i}_${j}" class="pago-confirmado"></small>
-          </div>
-        </div>
-      `;
-    });
-
-    rowHtml += `
-        <div class="metodo-pago">
+        <div class="division-subtotal">Subtotal: S/ <span id="subtotal_${i}">0.00</span></div>
+        <div class="division-metodo-pago">
           <label>Método:</label>
           <select id="metodo_${i}">
-            <option value="efectivo" selected>Efectivo</option>
-            <option value="Yape">Yape</option>
-            <option value="Plin">Plin</option>
-            <option value="tarjeta">Tarjeta</option>
+            <option value="efectivo" ${currentDivision.metodo[i]==="efectivo"?"selected":""}>Efectivo</option>
+            <option value="Yape" ${currentDivision.metodo[i]==="Yape"?"selected":""}>Yape</option>
+            <option value="Plin" ${currentDivision.metodo[i]==="Plin"?"selected":""}>Plin</option>
+            <option value="tarjeta" ${currentDivision.metodo[i]==="tarjeta"?"selected":""}>Tarjeta</option>
           </select>
-
-          <div id="efectivo_wrap_${i}" class="efectivo-wrap">
+          <div id="efectivo_wrap_${i}" class="efectivo-wrap" style="display:${currentDivision.metodo[i]==="efectivo"?"block":"none"};">
             <label>Monto entregado:</label>
-            <input type="number" id="entregado_${i}" min="0" step="0.01" />
+            <input type="number" id="entregado_${i}" min="0" step="0.01" value="${currentDivision.entregado[i] || ""}" />
             <div><small id="vuelto_${i}" class="vuelto"></small></div>
           </div>
         </div>
       </div>
     `;
-    contenedor.insertAdjacentHTML("beforeend", rowHtml);
+    contenedor.insertAdjacentHTML("beforeend", cardHtml);
   }
+
+  // Botones de acciones (nuevo: Cancelar)
+  contenedor.insertAdjacentHTML("beforeend", `
+    <div class="division-actions">
+      <button id="btnCancelarDivision" class="division-btn">❌ Cancelar</button>
+      <button id="btnPausarDivision" class="division-btn">⏸ Pausar</button>
+      <button id="btnConfirmarDivision" class="division-btn division-btn-disabled" disabled>✅ Confirmar división</button>
+    </div>
+  `);
 
   // Mostrar modal
   document.getElementById("modalDividir").style.display = "flex";
-  contenedor.scrollTop = 0; // Siempre desde Persona 1
+  contenedor.scrollTop = 0;
 
-  // Funciones auxiliares
-  const updateProdSaldoUI = (j) => {
-    const el = document.getElementById(`prodSaldo_${j}`);
-    if (el) {
-      const val = round2(saldoProductos[j]);
-      el.textContent = val > 0 ? `Restante: S/ ${val.toFixed(2)}` : `Pagado`;
-    }
-  };
+  // ===== FUNCIONES AUXILIARES =====
+  function calcularSaldoProducto(j) {
+    const totalPagado = currentDivision.pagos.reduce((sum, arr) => sum + arr[j], 0);
+    return round2(originalProductTotals[j] - totalPagado);
+  }
 
-  const updateSubtotalUIForPerson = (i) => {
-    let s = 0;
+  function calcularSubtotalPersona(i) {
+    return round2(currentDivision.pagos[i].reduce((a, b) => a + b, 0));
+  }
+
+  function registrarPago(i, j, monto) {
+    currentDivision.pagos[i][j] = monto;
+    renderUI();
+  }
+
+  function deshacerPago(i, j) {
+    currentDivision.pagos[i][j] = 0;
+    renderUI();
+  }
+
+  function renderUI() {
+    // Actualizar saldos por producto
     for (let j = 0; j < productos.length; j++) {
-      const val = parseFloat(document.getElementById(`pago_${i}_${j}`)?.value) || 0;
-      s += val;
+      const saldo = calcularSaldoProducto(j);
+      const spans = document.querySelectorAll(`#saldo_${j}`);
+      spans.forEach(span => {
+        span.textContent = saldo > 0 ? `Falta: S/ ${saldo.toFixed(2)}` : "Pagado";
+        span.className = "division-saldo " + (saldo > 0 ? "pendiente" : "pagado");
+      });
     }
-    document.getElementById(`subtotal_${i}`).textContent = round2(s).toFixed(2);
 
-    const entregado = parseFloat(document.getElementById(`entregado_${i}`)?.value);
-    const vueltoSpan = document.getElementById(`vuelto_${i}`);
-    if (!isNaN(entregado)) {
-      const vuelto = round2(entregado - s);
-      vueltoSpan.textContent = vuelto >= 0 ? `Vuelto: S/ ${vuelto.toFixed(2)}` : "Monto insuficiente";
-    } else {
-      vueltoSpan.textContent = "";
+    // Subtotales y vuelto
+    for (let i = 0; i < num; i++) {
+      document.getElementById(`subtotal_${i}`).textContent = calcularSubtotalPersona(i).toFixed(2);
+
+      for (let j = 0; j < productos.length; j++) {
+        const conf = document.getElementById(`conf_${i}_${j}`);
+        const btn = document.getElementById(`btnPagar_${i}_${j}`);
+        const inp = document.getElementById(`pago_${i}_${j}`);
+        const monto = currentDivision.pagos[i][j];
+
+        if (monto > 0) {
+          inp.disabled = true;
+          btn.disabled = true;
+          conf.innerHTML = `<span class="division-confirm-ok">✓ S/ ${monto.toFixed(2)}</span> 
+                            <button id="undo_${i}_${j}" class="deshacer-btn">↩</button>`;
+          document.getElementById(`undo_${i}_${j}`).onclick = () => deshacerPago(i, j);
+        } else {
+          inp.disabled = false;
+          btn.disabled = false;
+          conf.textContent = "";
+        }
+      }
+
+      if (currentDivision.metodo[i] === "efectivo") {
+        const entregado = parseFloat(document.getElementById(`entregado_${i}`).value) || null;
+        currentDivision.entregado[i] = entregado;
+        const vueltoSpan = document.getElementById(`vuelto_${i}`);
+        if (entregado != null) {
+          const vuelto = round2(entregado - calcularSubtotalPersona(i));
+          vueltoSpan.textContent = vuelto >= 0 ? `Vuelto: S/ ${vuelto.toFixed(2)}` : "Monto insuficiente";
+        } else {
+          vueltoSpan.textContent = "";
+        }
+      }
     }
-  };
 
-  // Eventos para cada persona y producto
+    // 🔹 Actualizar pendiente total
+    const totalPedido = originalProductTotals.reduce((a, b) => a + b, 0);
+    const totalPagado = currentDivision.pagos.flat().reduce((a, b) => a + b, 0);
+    document.getElementById("pendienteTotal").textContent = (totalPedido - totalPagado).toFixed(2);
+
+    checkConfirmButton();
+  }
+
+  function checkConfirmButton() {
+    const btnConfirmar = document.getElementById("btnConfirmarDivision");
+    if (!btnConfirmar) return;
+    const allPagado = currentDivision.productos.every((_, j) => calcularSaldoProducto(j) <= 0.01);
+    btnConfirmar.disabled = !allPagado;
+    btnConfirmar.classList.toggle("division-btn-disabled", !allPagado);
+  }
+
+  // ===== EVENTOS =====
   for (let i = 0; i < num; i++) {
     for (let j = 0; j < productos.length; j++) {
       const pagoInp = document.getElementById(`pago_${i}_${j}`);
       const btnPagar = document.getElementById(`btnPagar_${i}_${j}`);
-      const confSpan = document.getElementById(`conf_${i}_${j}`);
 
-      pagoInp.addEventListener("input", () => updateSubtotalUIForPerson(i));
-
-      btnPagar.addEventListener("click", () => {
+      btnPagar.addEventListener("click", async () => {
         const monto = round2(parseFloat(pagoInp.value) || 0);
-        if (monto <= 0) return alert("Ingresa un monto mayor que 0 para confirmar.");
-        if (monto > saldoProductos[j] + 0.0001) {
-          return alert(`El monto excede el saldo para "${productos[j].nombre}". Saldo: S/ ${saldoProductos[j].toFixed(2)}`);
-        }
+        const saldo = calcularSaldoProducto(j);
+    if (monto <= 0) return showToast("Monto inválido", "error");
+if (monto > saldo + 0.0001) return showToast(`El monto excede el saldo. Saldo: S/ ${saldo.toFixed(2)}`, "error");
 
-        pagosConfirmados[i][j] = monto;
-        confirmadosFlags[i][j] = true;
-        saldoProductos[j] = round2(saldoProductos[j] - monto);
-
-        pagoInp.disabled = true;
-        btnPagar.disabled = true;
-
-        confSpan.innerHTML = `✓ S/ ${monto.toFixed(2)} <button id="undo_${i}_${j}" class="deshacer-btn">↩</button>`;
-
-        document.getElementById(`undo_${i}_${j}`).addEventListener("click", () => {
-          saldoProductos[j] = round2(saldoProductos[j] + pagosConfirmados[i][j]);
-          pagosConfirmados[i][j] = 0;
-          confirmadosFlags[i][j] = false;
-
-          pagoInp.disabled = false;
-          btnPagar.disabled = false;
-          pagoInp.value = "";
-          confSpan.textContent = "";
-
-          updateProdSaldoUI(j);
-          updateSubtotalUIForPerson(i);
-        });
-
-        updateProdSaldoUI(j);
-        updateSubtotalUIForPerson(i);
+        registrarPago(i, j, monto);
       });
     }
 
@@ -604,225 +830,236 @@ function mostrarFormularioDivision(pedido, mesa, invocacionDesdeFirebase = false
     const entregadoInput = document.getElementById(`entregado_${i}`);
 
     metodoSelect.addEventListener("change", function () {
+      currentDivision.metodo[i] = this.value;
       efectivoWrap.style.display = this.value === "efectivo" ? "block" : "none";
-      if (this.value !== "efectivo") {
-        entregadoInput.value = "";
-        document.getElementById(`vuelto_${i}`).textContent = "";
-      }
+      renderUI();
     });
 
-    entregadoInput.addEventListener("input", () => updateSubtotalUIForPerson(i));
-
-    metodoSelect.dispatchEvent(new Event("change"));
-    updateSubtotalUIForPerson(i);
+    entregadoInput.addEventListener("input", () => renderUI());
   }
 
-  // Prefill datos si existen
-  if (Array.isArray(prefillFormas)) {
-    setTimeout(() => {
-      prefillFormas.forEach(fp => {
-        const idx = fp.persona ? fp.persona - 1 : fp.index;
-        if (idx == null || idx < 0 || idx >= num) return;
-
-        (fp.pagos || []).forEach((monto, j) => {
-          const inp = document.getElementById(`pago_${idx}_${j}`);
-          if (!inp) return;
-          inp.value = monto ?? inp.value;
-          if (fp.confirmados?.[j]) {
-            const btn = document.getElementById(`btnPagar_${idx}_${j}`);
-            if (btn && !btn.disabled) btn.click();
-          }
-        });
-
-        if (fp.metodo) {
-          const sel = document.getElementById(`metodo_${idx}`);
-          if (sel) {
-            sel.value = fp.metodo;
-            sel.dispatchEvent(new Event("change"));
-          }
-        }
-        if (fp.entregado != null) {
-          const ent = document.getElementById(`entregado_${idx}`);
-          if (ent) ent.value = fp.entregado;
-        }
-        updateSubtotalUIForPerson(idx);
-      });
-      for (let j = 0; j < productos.length; j++) updateProdSaldoUI(j);
-    }, 80);
-  }
-}
-
-
-// Reanudar división desde Firebase/localStorage
-function reanudarDivisionDesdeFirebase(mesa) {
-  const refTemp = ref(db, "divisionTemporal/" + mesa);
-  get(refTemp).then(snapshot => {
-    if (snapshot.exists()) {
-      const data = snapshot.val();
-      const prefill = data.formasPagoTemp ?? null;
-      mostrarFormularioDivision(data.pedido, mesa, true, prefill, data.num);
-      return;
-    }
-    // fallback localStorage
-    const local = localStorage.getItem("divisionTemporal_local_" + mesa);
-    if (local) {
-      try {
-        const parsed = JSON.parse(local);
-        const prefill = parsed.formasPagoTemp ?? null;
-        mostrarFormularioDivision(parsed.pedido, mesa, true, prefill, parsed.num);
-        return;
-      } catch (e) {
-        console.error("Error parsing local division", e);
-      }
-    }
-    alert("❌ No hay división pausada para esta mesa.");
-  
-
-  }).catch(err => {
-    console.error("Error leyendo divisionTemporal:", err);
-    // intentar localStorage igual
-    const local = localStorage.getItem("divisionTemporal_local_" + mesa);
-    if (local) {
-      try {
-        const parsed = JSON.parse(local);
-        mostrarFormularioDivision(parsed.pedido, mesa, true, parsed.formasPagoTemp);
-        return;
-      } catch (e) {
-        console.error("Error parsing local fallback", e);
-      }
-    }
-    alert("Error al reanudar la división (ver consola).");
-  });
-}
-
-// Botón Confirmar (finaliza sólo si la suma de pagos == total del pedido)
-document.getElementById("btnConfirmarDivision").addEventListener("click", () => {
-  if (!currentDivision) return alert("No hay división abierta.");
-  const { pedido, mesa, num, originalProductTotals } = currentDivision;
-  const productos = pedido.items || pedido.productos || [];
-
-  // Construir formasPago por persona, y validar por producto que no se pague más que el total
-  const formasPago = [];
-  const pagosPorProductoTotal = Array(productos.length).fill(0);
-
-  for (let i = 0; i < num; i++) {
-    const pagosPersona = [];
-    let sumaPersona = 0;
-    for (let j = 0; j < productos.length; j++) {
-      const val = parseFloat(document.getElementById(`pago_${i}_${j}`)?.value) || 0;
-      pagosPersona.push(round2(val));
-      pagosPorProductoTotal[j] += round2(val);
-      sumaPersona += round2(val);
-    }
-
-    const metodo = document.getElementById(`metodo_${i}`)?.value || "efectivo";
-    let entregado = null;
-    if (metodo === "efectivo") {
-      entregado = parseFloat(document.getElementById(`entregado_${i}`)?.value);
-      if (isNaN(entregado)) {
-        return alert(`Persona ${i + 1}: debes ingresar el monto entregado en efectivo.`);
-      }
-      const vuelto = round2(entregado - sumaPersona);
-      if (vuelto < 0) return alert(`Persona ${i + 1}: monto entregado insuficiente.`);
-    }
-
-    formasPago.push({
-      persona: i + 1,
-      metodo,
-      pagos: pagosPersona,
-      monto: round2(sumaPersona),
-      entregado: entregado ?? null,
-      vuelto: entregado != null ? round2(entregado - sumaPersona) : null
-    });
-  }
-
-  // Validar pagos por producto
-  for (let j = 0; j < productos.length; j++) {
-    const totalPagado = round2(pagosPorProductoTotal[j]);
-    const totalNecesario = round2(originalProductTotals[j]);
-    if (totalPagado > totalNecesario + 0.01) {
-      return alert(`El total pagado por "${productos[j].nombre}" excede su precio. Revisa los pagos.`);
-    }
-  }
-
-  // Validar suma total vs pedido.total
-  const totalPedido = round2(originalProductTotals.reduce((a, b) => a + b, 0));
-  const totalPagos = round2(formasPago.reduce((s, f) => s + f.monto, 0));
-  if (Math.abs(totalPedido - totalPagos) > 0.01) {
-    return alert(`La suma de los pagos (S/ ${totalPagos.toFixed(2)}) no coincide con el total del pedido (S/ ${totalPedido.toFixed(2)}). Ajusta los montos antes de confirmar.`);
-  }
-
-  // Si todo bien, finalizar
-  finalizarDivision(pedido, mesa, formasPago);
-});
-
-// Botón Pausar
-document.getElementById("btnPausarDivision").addEventListener("click", () => {
-  if (!currentDivision) return alert("No hay división abierta.");
-  const { pedido, mesa, num } = currentDivision;
-  const productos = pedido.items || pedido.productos || [];
-
-  const formasPagoTemp = [];
-  for (let i = 0; i < num; i++) {
-    const pagos = productos.map((_, j) => round2(parseFloat(document.getElementById(`pago_${i}_${j}`)?.value) || 0));
-    const confirmados = productos.map((_, j) => !!(document.getElementById(`btnPagar_${i}_${j}`)?.disabled && (document.getElementById(`conf_${i}_${j}`)?.textContent)));
-    const metodo = document.getElementById(`metodo_${i}`)?.value || "efectivo";
-    const entregadoRaw = document.getElementById(`entregado_${i}`)?.value;
-    formasPagoTemp.push({
-      persona: i + 1,
-      pagos,
-      confirmados,
-      metodo,
-      entregado: entregadoRaw ? parseFloat(entregadoRaw) : null
-    });
-  }
-
-  guardarDivisionTemporal(formasPagoTemp, pedido, mesa, num).then(res => {
-    if (res?.remote === true) {
-      alert("⏸️ División pausada (guardada en Firebase).");
-    } else {
-      alert("⏸️ División pausada (guardada localmente).");
-    }
-    estadoDivision = "pausada";
-    datosDivisionTemporal = { pedido, mesa };
+  // 🔹 Cancelar
+  document.getElementById("btnCancelarDivision").addEventListener("click", () => {
+    estadoDivision = "activa";
+    datosDivisionTemporal = null;
     currentDivision = null;
     document.getElementById("modalDividir").style.display = "none";
-  }).catch(err => {
-    console.error("Error guardando division temporal:", err);
-    alert("Error al pausar la división. Revisa la consola.");
+    showToast("❌ División cancelada.", "error");
   });
+
+  // Pausar
+  document.getElementById("btnPausarDivision").addEventListener("click", async () => {
+    await guardarDivisionTemporal(pedido, mesa);
+ showToast("⏸ División pausada. Puedes reanudar más tarde.", "info");
+
+    document.getElementById("modalDividir").style.display = "none";
+  });
+
+// Confirmar
+document.getElementById("btnConfirmarDivision").addEventListener("click", async () => {
+  if (!currentDivision) return showToast("No hay división en curso.", "error");
+
+  const formasPago = currentDivision.pagos.map((arrPagos, i) => {
+    const subtotal = arrPagos.reduce((a, b) => a + b, 0);
+    return {
+      persona: i + 1,
+      metodo: currentDivision.metodo[i] || "efectivo",
+      entregado: currentDivision.entregado[i] ?? null, // 👈 evita undefined
+      subtotal: round2(subtotal),
+      pagos: arrPagos.map(v => round2(v))
+    };
+  });
+
+  await finalizarDivision(currentDivision.pedido, currentDivision.mesa, formasPago);
 });
 
-// Botón principal "Dividir Cuenta" (pide mesa por prompt)
-document.getElementById("dividirCuentaBtn").addEventListener("click", () => {
-  const mesa = prompt("Ingresa el número de mesa:");
-  if (!mesa || mesa.trim() === "") return alert("⚠️ Debes ingresar un número de mesa.");
 
-  // Verificar si hay división pausada en Firebase
-  get(ref(db, "divisionTemporal/" + mesa.trim())).then(snapshotTemp => {
-    if (snapshotTemp.exists()) {
-      // Hay división pausada → reanudar
-      reanudarDivisionDesdeFirebase(mesa.trim());
-    } else {
-      // No hay división pausada → flujo normal
-      get(ref(db, "pedidos/" + mesa.trim())).then(snapshot => {
-        if (!snapshot.exists()) return alert("No hay pedido para esta mesa.");
-        mostrarFormularioDivision(snapshot.val(), mesa.trim());
-      });
+  // Inicial
+  renderUI();
+}
+
+
+// ---------------------- MODALES PERSONALIZADOS ----------------------
+function createModal(html) {
+  let modal = document.createElement("div");
+  modal.className = "custom-modal-overlay";
+  modal.innerHTML = `<div class="custom-modal">${html}</div>`;
+  document.body.appendChild(modal);
+  return modal;
+}
+
+function showModal(message) {
+  return new Promise(resolve => {
+    const modal = createModal(`
+      <div class="custom-modal-message">${message}</div>
+      <button class="custom-modal-btn">Aceptar</button>
+    `);
+    modal.querySelector(".custom-modal-btn").onclick = () => {
+      document.body.removeChild(modal);
+      resolve();
+    };
+  });
+}
+
+function showInputModal(message, placeholder = "") {
+  return new Promise(resolve => {
+    const modal = createModal(`
+      <div class="custom-modal-message">${message}</div>
+      <input class="custom-modal-input" type="text" placeholder="${placeholder}" />
+      <div class="custom-modal-actions">
+        <button class="custom-modal-btn">Aceptar</button>
+        <button class="custom-modal-btn cancel">Cancelar</button>
+      </div>
+    `);
+    const input = modal.querySelector(".custom-modal-input");
+    modal.querySelector(".custom-modal-btn").onclick = () => {
+      const value = input.value;
+      document.body.removeChild(modal);
+      resolve(value);
+    };
+    modal.querySelector(".custom-modal-btn.cancel").onclick = () => {
+      document.body.removeChild(modal);
+      resolve(null);
+    };
+    input.focus();
+  });
+}
+
+function showConfirmModal(message) {
+  return new Promise(resolve => {
+    const modal = createModal(`
+      <div class="custom-modal-message">${message}</div>
+      <div class="custom-modal-actions">
+        <button class="custom-modal-btn">Sí</button>
+        <button class="custom-modal-btn cancel">No</button>
+      </div>
+    `);
+    modal.querySelector(".custom-modal-btn").onclick = () => {
+      document.body.removeChild(modal);
+      resolve(true);
+    };
+    modal.querySelector(".custom-modal-btn.cancel").onclick = () => {
+      document.body.removeChild(modal);
+      resolve(false);
+    };
+  });
+}
+
+// Reemplaza alert, prompt y confirm
+window.alert = async function(msg) { await showModal(msg); };
+window.prompt = async function(msg, placeholder = "") { return await showInputModal(msg, placeholder); };
+window.confirm = async function(msg) { return await showConfirmModal(msg); };
+
+// ---------------------- TOASTS PERSONALIZADOS ----------------------
+function showToast(message, type = "info") {
+  // Crear contenedor si no existe
+  let container = document.querySelector(".toast-container");
+  if (!container) {
+    container = document.createElement("div");
+    container.className = "toast-container";
+    document.body.appendChild(container);
+  }
+
+  // Crear el toast
+  const toast = document.createElement("div");
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+
+  // Agregar al contenedor
+  container.appendChild(toast);
+
+  // Eliminar automáticamente después de la animación
+  toast.addEventListener("animationend", (e) => {
+    if (e.animationName === "fadeOut") {
+      toast.remove();
     }
-  }).catch(err => {
-    console.error("Error al buscar división pausada:", err);
-    alert("Ocurrió un error al verificar la división pausada.");
   });
+}
+
+
+
+// ================== ENLACES BOTONES ==================
+// (eliminado listener duplicado de guardarBtn)
+document.getElementById("verBoletaBtn")?.addEventListener("click", verBoleta);
+document.getElementById("editarBtn")?.addEventListener("click", editarPedido);
+document.getElementById("completarBtn")?.addEventListener("click", completarPedido);
+document.getElementById("verPendientesBtn")?.addEventListener("click", verPedidosPendientes);
+document.getElementById("enviarWhatsappBtn")?.addEventListener("click", enviarBoletaWhatsapp);
+document.getElementById("dividirCuentaBtn")?.addEventListener("click", async () => {
+  const mesa = await prompt("Número de mesa a dividir:");
+  if (!mesa) return;
+  const refMesa = ref(db, "pedidos/" + mesa);
+  const snapshot = await get(refMesa);
+  if (!snapshot.exists()) return showToast("❌ No hay pedido", "error");
+  const pedido = snapshot.val();
+
+  try {
+    const refTemp = ref(db, "divisionTemporal/" + mesa);
+    const snapshotTemp = await get(refTemp);
+    let datosGuardados = null;
+
+    if (snapshotTemp.exists()) {
+      const continuar = await confirm("⏯ Hay una división pausada. ¿Deseas reanudarla?");
+      if (!continuar) {
+        await remove(refTemp);
+      } else {
+        datosGuardados = snapshotTemp.val();
+      }
+    } else {
+      const localData = localStorage.getItem("divisionTemporal_local_" + mesa);
+      if (localData) {
+        const continuarLocal = await confirm("⏯ Hay una división pausada localmente. ¿Deseas reanudarla?");
+        if (continuarLocal) {
+          datosGuardados = JSON.parse(localData);
+        } else {
+          localStorage.removeItem("divisionTemporal_local_" + mesa);
+        }
+      }
+    }
+
+    mostrarFormularioDivision(pedido, mesa, datosGuardados);
+
+  } catch (err) {
+    console.error("Error al verificar división guardada:", err);
+   showToast("⚠️ Ocurrió un error al verificar divisiones pausadas.", "error");
+  }
 });
 
 
-// Eventos globales para otros botones
-document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("guardarBtn").addEventListener("click", guardarPedido);
-  document.getElementById("verBoletaBtn").addEventListener("click", verBoleta);
-  document.getElementById("editarBtn").addEventListener("click", editarPedido);
-  document.getElementById("completarBtn").addEventListener("click", completarPedido);
-  document.getElementById("verPendientesBtn").addEventListener("click", verPedidosPendientes);
-  document.getElementById("enviarWhatsappBtn").addEventListener("click", enviarBoletaWhatsapp);
-});
+// === Notificación cuando un producto se marca como listo en cocina ===
+let estadoAnteriorPedidos = {}; // para detectar cambios
+let primeraCarga = true;
+
+function escucharPedidosListos() {
+  const pedidosRef = ref(db, "pedidos"); 
+  onValue(pedidosRef, (snapshot) => {    
+    const pedidos = snapshot.val();
+    if (!pedidos) {
+      estadoAnteriorPedidos = {};
+      return;
+    }
+
+    Object.entries(pedidos).forEach(([mesa, pedido]) => {
+      (pedido.items || []).forEach((item, i) => {
+        const clave = mesa + "-" + i;
+        const ahoraListo = item.listo === true;
+        const estabaListo = estadoAnteriorPedidos[clave];
+
+        if (!primeraCarga) {
+          if (ahoraListo && !estabaListo) {
+            showToast(`✅ Pedido listo: ${item.nombre} (Mesa ${mesa})`, "success");
+            reproducirSonidoPedidoListo?.();
+          }
+        }
+
+        estadoAnteriorPedidos[clave] = ahoraListo;
+      });
+    });
+
+    primeraCarga = false;
+  });
+}
+
+
+// Llamar después del login de mesero
+escucharPedidosListos();
