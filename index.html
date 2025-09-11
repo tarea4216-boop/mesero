@@ -3,10 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <title>Restaurante el Camarón de Oro - Mesero</title>
+  <link rel="icon" href="data:," />
   <link rel="stylesheet" href="style.css" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
+
 <body>
+  <!-- 🔔 Contenedor de notificaciones -->
+  <div id="toastContainer" class="toast-container"></div>
 
   <div class="container">
     <h1>🍤 Restaurante El Camarón de Oro</h1>
@@ -14,8 +18,23 @@
     <!-- 🔐 Login -->
     <section id="loginSection" class="card">
       <h2>Iniciar sesión</h2>
-      <input type="email" id="emailInput" placeholder="Correo electrónico" />
-      <input type="password" id="passwordInput" placeholder="Contraseña" />
+      
+      <label for="emailInput">Correo electrónico</label>
+      <input 
+        type="email" 
+        id="emailInput" 
+        name="email" 
+        placeholder="Correo electrónico"
+        autocomplete="username" />
+
+      <label for="passwordInput">Contraseña</label>
+      <input 
+        type="password" 
+        id="passwordInput" 
+        name="password" 
+        placeholder="Contraseña"
+        autocomplete="current-password" />
+
       <button id="loginBtn">Entrar</button>
     </section>
 
@@ -24,8 +43,21 @@
       <h2>Panel del Mesero</h2>
 
       <div class="form-group">
-        <input id="mesaInput" type="number" placeholder="Número de mesa" />
-        <input id="buscarInput" type="text" placeholder="Buscar producto" />
+        <label for="mesaInput">Número de mesa</label>
+        <input 
+          id="mesaInput" 
+          type="number" 
+          name="mesa" 
+          placeholder="Número de mesa"
+          autocomplete="off" />
+
+        <label for="buscarInput">Buscar producto</label>
+        <input 
+          id="buscarInput" 
+          type="text" 
+          name="buscar" 
+          placeholder="Buscar producto"
+          autocomplete="off" />
       </div>
 
       <ul id="listaProductos"></ul>
@@ -46,22 +78,19 @@
   </div>
 
   <!-- ✅ MODAL DIVIDIR CUENTA -->
-  <div id="modalDividir">
+  <div id="modalDividir" style="display:none;">
     <div class="modal-content">
       <h3>Dividir Cuenta</h3>
-      <div id="contenedorFormasPago"></div>
-      <button id="btnConfirmarDivision" class="modal-btn">✅ Confirmar</button>
-      <button id="btnPausarDivision" class="modal-btn">⏸️ Pausar</button>
-      <button id="btnCancelarDivision" class="modal-btn" onclick="document.getElementById('modalDividir').style.display='none'">Cancelar</button>
+      <div id="contenedorFormasPago" class="division-personas"></div>
     </div>
   </div>
 
-  <script type="module" src="script.js"></script>
+  <div id="modalPedidosPendientes" style="display:none;"></div>
+  <div id="modalBoleta" style="display:none;"></div>
+
+  <script type="module" src="script_corregido3.js"></script>
 </body>
 </html>
-
-
-
 
 
 
