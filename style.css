@@ -119,12 +119,12 @@ li:hover { background-color: var(--borde); }
   .button-group { grid-template-columns: 1fr; }
 }
 
-/* ==== MODAL DIVIDIR CUENTA (Versión Final Limpia) ==== */
+/* ==== MODAL DIVIDIR CUENTA ==== */
 #modalDividir {
   display: none;
   position: fixed;
   z-index: 9999;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
   inset: 0;
   justify-content: center;
   align-items: center;
@@ -134,51 +134,87 @@ li:hover { background-color: var(--borde); }
   display: flex;
   flex-direction: column;
   max-height: 85vh;
-  overflow: hidden; /* scroll vive en #contenedorFormasPago */
+  overflow: hidden; /* El scroll vive en #contenedorFormasPago */
   background: #fff;
-  padding: 20px;
+  padding: 0;
   border-radius: 14px;
   width: 96%;
   max-width: 980px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   animation: fadeInModal 0.4s ease;
 }
 
-/* Área scrolleable */
-#contenedorFormasPago {
-  flex: 1;
-  overflow-y: auto;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  padding: 12px;
+/* Encabezado del modal */
+#modalDividir .modal-content h3 {
+  background: linear-gradient(135deg, #42a5f5, #ec407a);
+  color: #fff;
+  margin: 0;
+  padding: 18px 22px;
+  font-size: 1.4rem;
+  font-weight: bold;
+  text-align: center;
+  position: sticky; /* Encabezado fijo */
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Sombra para diferenciarlo */
 }
 
-/* Encabezado */
+/* Contenedor de productos y personas */
+#contenedorFormasPago {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* Tres columnas en pantallas grandes */
+  gap: 12px;
+  padding: 12px;
+  overflow-y: auto; /* Habilita el desplazamiento vertical */
+  flex: 1;
+}
+
+/* Resumen arriba */
 #contenedorFormasPago > .division-resumen {
-  grid-column: 1 / -1;
-  position: sticky;
-  top: 0;
+  grid-column: 1 / -1; /* Ocupa todo el ancho */
+  position: sticky; /* Resumen fijo */
+  top: 60px; /* Debajo del encabezado */
   z-index: 5;
   background: #e7f1ff;
   border-bottom: 2px solid #c3d9f7;
   padding: 12px 14px;
   border-radius: 10px 10px 0 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Sombra para diferenciarlo */
 }
 
-/* Tarjetas */
+/* Tarjetas de personas */
 .division-persona-card {
   background: #f4f9ff;
   border: 1px solid #c3d9f7;
   border-radius: 12px;
   padding: 14px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* Barra de acciones */
+.division-persona-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+}
+
+.division-persona-card h4 {
+  margin-bottom: 8px;
+  color: #3949ab;
+}
+
+.division-persona-card input,
+.division-persona-card select {
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  padding: 10px;
+  font-size: 0.95rem;
+  width: 100%;
+}
+
+/* Footer de acciones */
 #contenedorFormasPago > .division-actions {
-  grid-column: 1 / -1;
-  position: sticky;
+  grid-column: 1 / -1; /* Ocupa todo el ancho */
+  position: sticky; /* Footer fijo */
   bottom: 0;
   z-index: 5;
   background: #fff;
@@ -196,23 +232,82 @@ li:hover { background-color: var(--borde); }
 #contenedorFormasPago .deshacer-btn {
   width: auto;
   min-width: 130px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.division-actions .pausar {
+  background: #ffca28;
+  color: #333;
+}
+
+.division-actions .confirmar {
+  background: #43a047;
+  color: #fff;
+}
+
+.division-actions .cancelar {
+  background: #e0e0e0;
+  color: #444;
+}
+
+.division-actions .pausar:hover {
+  background: #f4b400;
+}
+
+.division-actions .confirmar:hover {
+  background: #388e3c;
+}
+
+.division-actions .cancelar:hover {
+  background: #bdbdbd;
 }
 
 /* Responsive */
 @media (max-width: 900px) {
-  #contenedorFormasPago { grid-template-columns: 1fr; }
+  #contenedorFormasPago {
+    grid-template-columns: 1fr; /* Una sola columna */
+    gap: 14px;
+    padding: 10px;
+  }
+
+  .division-resumen {
+    position: relative; /* Ya no sticky en pantallas pequeñas */
+    top: auto;
+    margin-bottom: 10px;
+    border-radius: 12px;
+    font-size: 1rem;
+  }
+
+  .division-persona-card {
+    padding: 14px;
+    font-size: 0.95rem;
+  }
+
+  .division-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .division-actions button {
+    width: 100%;
+    font-size: 1rem;
+  }
 }
 
-/* ==== MODALES PERSONALIZADOS ==== */
+/* Centrado y diseño mejorado del modal */
 .custom-modal-overlay {
-  position: fixed;
-  inset: 0;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: rgba(0,0,0,0.5);
-  z-index: 99999;
-  animation: fadeInModal 0.3s ease;
+  background: rgba(0, 0, 0, 0.5);
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
 }
 
 .custom-modal {
@@ -221,32 +316,54 @@ li:hover { background-color: var(--borde); }
   border-radius: 12px;
   width: 90%;
   max-width: 400px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
   text-align: center;
   animation: slideUp 0.3s ease;
 }
 
-.custom-modal-message { margin-bottom: 15px; font-size: 1.1em; color: #333; }
-.custom-modal-actions { display: flex; justify-content: center; gap: 10px; margin-top: 15px; }
+.custom-modal h3 {
+  font-size: 1.2rem;
+  margin-bottom: 12px;
+  color: var(--rosa-fuerte);
+}
+
+.custom-modal p {
+  font-size: 1rem;
+  margin-bottom: 16px;
+  color: var(--gris-texto);
+}
+
 .custom-modal-btn {
   background: var(--rosa-medio);
   color: #fff;
   border: none;
-  padding: 8px 14px;
+  padding: 10px 16px;
   border-radius: 6px;
   cursor: pointer;
   transition: background 0.2s;
+  width: 100%;
+  margin-bottom: 10px;
 }
-.custom-modal-btn:hover { background: var(--rosa-hover); }
-.custom-modal-btn.cancel { background: #aaa; }
-.custom-modal-btn.cancel:hover { background: #888; }
+
+.custom-modal-btn:hover {
+  background: var(--rosa-hover);
+}
+
+.custom-modal-btn.cancel {
+  background: #aaa;
+}
+
+.custom-modal-btn.cancel:hover {
+  background: #888;
+}
+
 .custom-modal-input {
   width: 100%;
   padding: 10px;
   border-radius: 6px;
   border: 1px solid #ccc;
   font-size: 1em;
-  margin-top: 8px;
+  margin-bottom: 10px;
 }
 
 /* Animaciones */
@@ -372,30 +489,7 @@ li:hover { background-color: var(--borde); }
   background: linear-gradient(135deg, #42a5f5, #ec407a);
   color: #fff;
   margin: 0;
-  padding: 18px 22px;
-  font-size: 1.4rem;
-  font-weight: bold;
-  text-align: center;
-}
-
-/* Encabezado de resumen (Pendiente fijo) */
-.division-resumen {
-  background: #f1f7ff;
-  border: 1px solid #cfdff7;
-  border-radius: 12px;
-  padding: 14px;
-  margin-bottom: 12px;
-  font-size: 0.95rem;
-  line-height: 1.5;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-/* Tarjeta persona */
-.division-persona-card {
-  background: #ffffff;
-  border-radius: 14px;
+  padding: 18px;
   border: 1px solid #dbe5f0;
   padding: 16px;
   box-shadow: 0 3px 8px rgba(0,0,0,0.08);
@@ -453,6 +547,10 @@ li:hover { background-color: var(--borde); }
   justify-content: center;
   gap: 12px;
   flex-wrap: wrap;
+  position: sticky; /* Footer fijo */
+  bottom: 0;
+  z-index: 10;
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1); /* Sombra para diferenciarlo */
 }
 .division-actions button {
   padding: 12px 18px;
@@ -461,18 +559,9 @@ li:hover { background-color: var(--borde); }
   font-size: 1rem;
   cursor: pointer;
 }
-.division-actions .pausar {
-  background: #ffca28;
-  color: #333;
-}
-.division-actions .confirmar {
-  background: #43a047;
-  color: #fff;
-}
-.division-actions .cancelar {
-  background: #e0e0e0;
-  color: #444;
-}
+.division-actions .pausar { background: #ffca28; color: #333; }
+.division-actions .confirmar { background: #43a047; color: #fff; }
+.division-actions .cancelar { background: #e0e0e0; color: #444; }
 .division-actions .pausar:hover { background: #f4b400; }
 .division-actions .confirmar:hover { background: #388e3c; }
 .division-actions .cancelar:hover { background: #bdbdbd; }
@@ -613,4 +702,1002 @@ li:hover { background-color: var(--borde); }
   }
   .division-persona-card { padding: 12px !important; }
   .division-resumen { font-size: 0.95rem !important; }
+}
+
+/* ==== MODAL DIVIDIR CUENTA (Versión Final Limpia) ==== */
+#modalDividir {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  justify-content: center;
+  align-items: center;
+}
+
+#modalDividir .modal-content {
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh;
+  background: #fff;
+  border-radius: 14px;
+  width: 96%;
+  max-width: 980px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  animation: fadeInModal 0.4s ease;
+}
+
+
+
+/* Encabezado del modal */
+#modalDividir .modal-content h3 {
+  background: linear-gradient(135deg, #42a5f5, #ec407a);
+  color: #fff;
+  margin: 0;
+  padding: 18px 22px;
+  font-size: 1.4rem;
+  font-weight: bold;
+  text-align: center;
+  position: sticky; /* Encabezado fijo */
+  top: 0; /* Se queda en la parte superior */
+  z-index: 10; /* Asegura que esté encima del contenido */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Sombra para diferenciarlo */
+}
+
+/* Contenedor de productos y personas */
+#contenedorFormasPago {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* Tres columnas en pantallas grandes */
+  gap: 12px;
+  padding: 12px;
+  overflow-y: auto; /* Habilita el desplazamiento vertical */
+  flex: 1;
+}
+
+/* Resumen arriba */
+#contenedorFormasPago > .division-resumen {
+  grid-column: 1 / -1; /* Ocupa todo el ancho */
+  position: sticky; /* Resumen fijo */
+  top: 60px; /* Debajo del encabezado */
+  z-index: 5;
+  background: #e7f1ff;
+  border-bottom: 2px solid #c3d9f7;
+  padding: 12px 14px;
+  border-radius: 10px 10px 0 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Sombra para diferenciarlo */
+}
+
+/* Tarjetas de personas */
+.division-persona-card {
+  background: #f4f9ff;
+  border: 1px solid #c3d9f7;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.division-persona-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+}
+
+.division-persona-card h4 {
+  margin-bottom: 8px;
+  color: #3949ab;
+}
+
+.division-persona-card input,
+.division-persona-card select {
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  padding: 10px;
+  font-size: 0.95rem;
+  width: 100%;
+}
+
+.division-persona-card .division-btn {
+  background: #f06292;
+  color: #fff;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+.division-persona-card .division-btn:hover { background: #ec407a; }
+
+.division-persona-card .deshacer-btn {
+  background: #ddd;
+  color: #333;
+}
+.division-persona-card .deshacer-btn:hover { background: #bbb; }
+
+/* Footer acciones */
+.division-actions {
+  background: #fafafa;
+  border-top: 1px solid #e0e0e0;
+  padding: 14px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  position: sticky; /* Footer fijo */
+  bottom: 0;
+  z-index: 10;
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1); /* Sombra para diferenciarlo */
+}
+.division-actions button {
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.division-actions .pausar { background: #ffca28; color: #333; }
+.division-actions .confirmar { background: #43a047; color: #fff; }
+.division-actions .cancelar { background: #e0e0e0; color: #444; }
+.division-actions .pausar:hover { background: #f4b400; }
+.division-actions .confirmar:hover { background: #388e3c; }
+.division-actions .cancelar:hover { background: #bdbdbd; }
+
+/* ==== TOAST PERSONALIZADO ==== */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 100000;
+}
+
+.toast {
+  padding: 12px 18px;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 500;
+  min-width: 200px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+  animation: slideIn 0.4s ease, fadeOut 0.4s ease 3.5s forwards;
+}
+.toast.success { background: #43a047; }
+.toast.error { background: #e53935; }
+.toast.info { background: #1e88e5; }
+
+@keyframes slideIn {
+  from { transform: translateX(120%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes fadeOut {
+  to { opacity: 0; transform: translateX(120%); }
+}
+
+/* 📱 Ajustes responsive para Dividir Cuenta */
+@media (max-width: 768px) {
+  #contenedorFormasPago {
+    grid-template-columns: 1fr; /* una sola columna */
+    gap: 14px;
+    padding: 10px;
+  }
+
+  .division-resumen {
+    position: relative; /* ya no sticky en pantallas pequeñas */
+    top: auto;
+    margin-bottom: 10px;
+    border-radius: 12px;
+    font-size: 1rem;
+  }
+
+  .division-persona-card {
+    padding: 14px;
+    font-size: 0.95rem;
+  }
+
+  .division-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .division-actions button {
+    width: 100%;
+    font-size: 1rem;
+  }
+}
+
+/* ===== Ajustes finales responsive para modal "Dividir Cuenta" ===== */
+/* (coloca esto AL FINAL de tu admin/style CSS para que sobrescriba reglas previas) */
+
+@media (max-width: 900px) {
+  /* Forzamos una sola columna en pantallas pequeñas */
+  #contenedorFormasPago {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+    padding: 12px !important;
+  }
+
+  /* Quitamos sticky del encabezado-resumen (misma especificidad que la regla original) */
+  #contenedorFormasPago > .division-resumen {
+    position: static !important;
+    top: auto !important;
+    z-index: 2 !important;
+    margin-bottom: 12px !important;
+    box-shadow: none !important;
+  }
+
+  /* Quitamos sticky del footer de acciones para que no se superponga */
+  #contenedorFormasPago > .division-actions {
+    position: static !important;
+    bottom: auto !important;
+    z-index: 2 !important;
+    padding: 10px 8px !important;
+  }
+
+  /* Aseguramos que las tarjetas se apilen sin superposición */
+  .division-persona-card {
+    margin-bottom: 8px !important;
+  }
+
+  /* Hacemos que los botones del footer ocupen todo el ancho para tocar más fácil */
+  #contenedorFormasPago > .division-actions button,
+  .division-actions .pausar,
+  .division-actions .confirmar,
+  .division-actions .cancelar {
+    width: 100% !important;
+    min-width: unset !important;
+  }
+
+  /* Reducimos ancho del modal para móviles para que no quede tan ancho */
+  #modalDividir .modal-content {
+    width: 96% !important;
+    max-width: 480px !important;
+    padding: 12px !important;
+    border-radius: 12px !important;
+  }
+
+  /* Aseguramos que la cabecera del modal no tape contenido */
+  #modalDividir .modal-content h3 {
+    padding: 14px 12px !important;
+    font-size: 1.15rem !important;
+  }
+
+  /* Si necesitas que el header se mantenga visible (sticky),
+     usar position: sticky solo si no tapa las tarjetas; 
+     aquí lo desactivamos en móviles para evitar superposición */
+  #modalDividir .modal-content .division-resumen.sticky-enabled {
+    position: static !important;
+  }
+}
+
+/* Opcional: micro-ajuste para pantallas muy pequeñas (<=420px) */
+@media (max-width: 420px) {
+  #modalDividir .modal-content {
+    max-width: 98% !important;
+    padding: 10px !important;
+  }
+  .division-persona-card { padding: 12px !important; }
+  .division-resumen { font-size: 0.95rem !important; }
+}
+
+/* ==== MODAL DIVIDIR CUENTA (Versión Final Limpia) ==== */
+#modalDividir {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  justify-content: center;
+  align-items: center;
+}
+
+#modalDividir .modal-content {
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh;
+  background: #fff;
+  border-radius: 14px;
+  width: 96%;
+  max-width: 980px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  animation: fadeInModal 0.4s ease;
+}
+
+
+
+/* Encabezado del modal */
+#modalDividir .modal-content h3 {
+  background: linear-gradient(135deg, #42a5f5, #ec407a);
+  color: #fff;
+  margin: 0;
+  padding: 18px 22px;
+  font-size: 1.4rem;
+  font-weight: bold;
+  text-align: center;
+  position: sticky; /* Encabezado fijo */
+  top: 0; /* Se queda en la parte superior */
+  z-index: 10; /* Asegura que esté encima del contenido */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Sombra para diferenciarlo */
+}
+
+/* Contenedor de productos y personas */
+#contenedorFormasPago {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* Tres columnas en pantallas grandes */
+  gap: 12px;
+  padding: 12px;
+  overflow-y: auto; /* Habilita el desplazamiento vertical */
+  flex: 1;
+}
+
+/* Resumen arriba */
+#contenedorFormasPago > .division-resumen {
+  grid-column: 1 / -1; /* Ocupa todo el ancho */
+  position: sticky; /* Resumen fijo */
+  top: 60px; /* Debajo del encabezado */
+  z-index: 5;
+  background: #e7f1ff;
+  border-bottom: 2px solid #c3d9f7;
+  padding: 12px 14px;
+  border-radius: 10px 10px 0 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Sombra para diferenciarlo */
+}
+
+/* Tarjetas de personas */
+.division-persona-card {
+  background: #f4f9ff;
+  border: 1px solid #c3d9f7;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.division-persona-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+}
+
+.division-persona-card h4 {
+  margin-bottom: 8px;
+  color: #3949ab;
+}
+
+.division-persona-card input,
+.division-persona-card select {
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  padding: 10px;
+  font-size: 0.95rem;
+  width: 100%;
+}
+
+.division-persona-card .division-btn {
+  background: #f06292;
+  color: #fff;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+.division-persona-card .division-btn:hover { background: #ec407a; }
+
+.division-persona-card .deshacer-btn {
+  background: #ddd;
+  color: #333;
+}
+.division-persona-card .deshacer-btn:hover { background: #bbb; }
+
+/* Footer acciones */
+.division-actions {
+  background: #fafafa;
+  border-top: 1px solid #e0e0e0;
+  padding: 14px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  position: sticky; /* Footer fijo */
+  bottom: 0;
+  z-index: 10;
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1); /* Sombra para diferenciarlo */
+}
+.division-actions button {
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.division-actions .pausar { background: #ffca28; color: #333; }
+.division-actions .confirmar { background: #43a047; color: #fff; }
+.division-actions .cancelar { background: #e0e0e0; color: #444; }
+.division-actions .pausar:hover { background: #f4b400; }
+.division-actions .confirmar:hover { background: #388e3c; }
+.division-actions .cancelar:hover { background: #bdbdbd; }
+
+/* ==== TOAST PERSONALIZADO ==== */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 100000;
+}
+
+.toast {
+  padding: 12px 18px;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 500;
+  min-width: 200px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+  animation: slideIn 0.4s ease, fadeOut 0.4s ease 3.5s forwards;
+}
+.toast.success { background: #43a047; }
+.toast.error { background: #e53935; }
+.toast.info { background: #1e88e5; }
+
+@keyframes slideIn {
+  from { transform: translateX(120%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes fadeOut {
+  to { opacity: 0; transform: translateX(120%); }
+}
+
+/* 📱 Ajustes responsive para Dividir Cuenta */
+@media (max-width: 768px) {
+  #contenedorFormasPago {
+    grid-template-columns: 1fr; /* una sola columna */
+    gap: 14px;
+    padding: 10px;
+  }
+
+  .division-resumen {
+    position: relative; /* ya no sticky en pantallas pequeñas */
+    top: auto;
+    margin-bottom: 10px;
+    border-radius: 12px;
+    font-size: 1rem;
+  }
+
+  .division-persona-card {
+    padding: 14px;
+    font-size: 0.95rem;
+  }
+
+  .division-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .division-actions button {
+    width: 100%;
+    font-size: 1rem;
+  }
+}
+
+/* ===== Ajustes finales responsive para modal "Dividir Cuenta" ===== */
+/* (coloca esto AL FINAL de tu admin/style CSS para que sobrescriba reglas previas) */
+
+@media (max-width: 900px) {
+  /* Forzamos una sola columna en pantallas pequeñas */
+  #contenedorFormasPago {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+    padding: 12px !important;
+  }
+
+  /* Quitamos sticky del encabezado-resumen (misma especificidad que la regla original) */
+  #contenedorFormasPago > .division-resumen {
+    position: static !important;
+    top: auto !important;
+    z-index: 2 !important;
+    margin-bottom: 12px !important;
+    box-shadow: none !important;
+  }
+
+  /* Quitamos sticky del footer de acciones para que no se superponga */
+  #contenedorFormasPago > .division-actions {
+    position: static !important;
+    bottom: auto !important;
+    z-index: 2 !important;
+    padding: 10px 8px !important;
+  }
+
+  /* Aseguramos que las tarjetas se apilen sin superposición */
+  .division-persona-card {
+    margin-bottom: 8px !important;
+  }
+
+  /* Hacemos que los botones del footer ocupen todo el ancho para tocar más fácil */
+  #contenedorFormasPago > .division-actions button,
+  .division-actions .pausar,
+  .division-actions .confirmar,
+  .division-actions .cancelar {
+    width: 100% !important;
+    min-width: unset !important;
+  }
+
+  /* Reducimos ancho del modal para móviles para que no quede tan ancho */
+  #modalDividir .modal-content {
+    width: 96% !important;
+    max-width: 480px !important;
+    padding: 12px !important;
+    border-radius: 12px !important;
+  }
+
+  /* Aseguramos que la cabecera del modal no tape contenido */
+  #modalDividir .modal-content h3 {
+    padding: 14px 12px !important;
+    font-size: 1.15rem !important;
+  }
+
+  /* Si necesitas que el header se mantenga visible (sticky),
+     usar position: sticky solo si no tapa las tarjetas; 
+     aquí lo desactivamos en móviles para evitar superposición */
+  #modalDividir .modal-content .division-resumen.sticky-enabled {
+    position: static !important;
+  }
+}
+
+/* Opcional: micro-ajuste para pantallas muy pequeñas (<=420px) */
+@media (max-width: 420px) {
+  #modalDividir .modal-content {
+    max-width: 98% !important;
+    padding: 10px !important;
+  }
+  .division-persona-card { padding: 12px !important; }
+  .division-resumen { font-size: 0.95rem !important; }
+}
+
+/* ==== MODAL DIVIDIR CUENTA (Versión Final Limpia) ==== */
+#modalDividir {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  justify-content: center;
+  align-items: center;
+}
+
+#modalDividir .modal-content {
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh;
+  background: #fff;
+  border-radius: 14px;
+  width: 96%;
+  max-width: 980px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  animation: fadeInModal 0.4s ease;
+}
+
+
+
+/* Encabezado del modal */
+#modalDividir .modal-content h3 {
+  background: linear-gradient(135deg, #42a5f5, #ec407a);
+  color: #fff;
+  margin: 0;
+  padding: 18px 22px;
+  font-size: 1.4rem;
+  font-weight: bold;
+  text-align: center;
+  position: sticky; /* Encabezado fijo */
+  top: 0; /* Se queda en la parte superior */
+  z-index: 10; /* Asegura que esté encima del contenido */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Sombra para diferenciarlo */
+}
+
+/* Contenedor de productos y personas */
+#contenedorFormasPago {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* Tres columnas en pantallas grandes */
+  gap: 12px;
+  padding: 12px;
+  overflow-y: auto; /* Habilita el desplazamiento vertical */
+  flex: 1;
+}
+
+/* Resumen arriba */
+#contenedorFormasPago > .division-resumen {
+  grid-column: 1 / -1; /* Ocupa todo el ancho */
+  position: sticky; /* Resumen fijo */
+  top: 60px; /* Debajo del encabezado */
+  z-index: 5;
+  background: #e7f1ff;
+  border-bottom: 2px solid #c3d9f7;
+  padding: 12px 14px;
+  border-radius: 10px 10px 0 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Sombra para diferenciarlo */
+}
+
+/* Tarjetas de personas */
+.division-persona-card {
+  background: #f4f9ff;
+  border: 1px solid #c3d9f7;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.division-persona-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+}
+
+.division-persona-card h4 {
+  margin-bottom: 8px;
+  color: #3949ab;
+}
+
+.division-persona-card input,
+.division-persona-card select {
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  padding: 10px;
+  font-size: 0.95rem;
+  width: 100%;
+}
+
+/* Botones dentro de la tarjeta */
+.division-persona-card button {
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+.division-persona-card .division-btn {
+  background: #f06292;
+  color: #fff;
+}
+.division-persona-card .division-btn:hover {
+  background: #ec407a;
+}
+.division-persona-card .deshacer-btn {
+  background: #ddd;
+  color: #333;
+}
+.division-persona-card .deshacer-btn:hover {
+  background: #bbb;
+}
+
+/* Footer acciones */
+.division-actions {
+  background: #fafafa;
+  border-top: 1px solid #e0e0e0;
+  padding: 14px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  position: sticky; /* Footer fijo */
+  bottom: 0;
+  z-index: 10;
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1); /* Sombra para diferenciarlo */
+}
+.division-actions button {
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.division-actions .pausar { background: #ffca28; color: #333; }
+.division-actions .confirmar { background: #43a047; color: #fff; }
+.division-actions .cancelar { background: #e0e0e0; color: #444; }
+.division-actions .pausar:hover { background: #f4b400; }
+.division-actions .confirmar:hover { background: #388e3c; }
+.division-actions .cancelar:hover { background: #bdbdbd; }
+
+/* ==== TOAST ==== */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 100000;
+}
+.toast {
+  padding: 12px 18px;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 500;
+  min-width: 200px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+  animation: slideIn 0.4s ease, fadeOut 0.4s ease 3.5s forwards;
+}
+.toast.success { background: #43a047; }
+.toast.error { background: #e53935; }
+.toast.info { background: #1e88e5; }
+@keyframes slideIn {
+  from { transform: translateX(120%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes fadeOut {
+  to { opacity: 0; transform: translateX(120%); }
+}
+
+/* 📱 Responsive para Dividir Cuenta */
+@media (max-width: 900px) {
+  #contenedorFormasPago { grid-template-columns: 1fr !important; }
+  .division-resumen { position: static !important; margin-bottom: 12px !important; }
+  .division-actions { position: static !important; padding: 10px 8px !important; }
+  .division-actions button { width: 100% !important; }
+  #modalDividir .modal-content {
+    width: 96% !important;
+    max-width: 480px !important;
+    padding: 12px !important;
+    border-radius: 12px !important;
+  }
+  #modalDividir .modal-content h3 {
+    padding: 14px 12px !important;
+    font-size: 1.15rem !important;
+  }
+}
+/* ==== MODAL ACCIÓN DE PAGO ==== */
+.opcion-pago {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fce4ec;
+  border: 2px solid #f48fb1;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin: 10px 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.opcion-pago:hover {
+  background: #f8bbd0;
+  border-color: #ec407a;
+}
+.opcion-pago span {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ad1457;
+}
+.opcion-pago input {
+  margin-left: 10px;
+  flex: 0 0 70px;
+  padding: 6px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 0.95rem;
+}
+.opcion-pago input:focus {
+  border-color: #ec407a;
+  outline: none;
+}
+
+/* Botón cancelar */
+.btn-cancelar {
+  width: 100%;
+  margin-top: 12px;
+  background: #e0e0e0;
+  color: #333;
+  border: none;
+  border-radius: 10px;
+  padding: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+.btn-cancelar:hover {
+  background: #bdbdbd;
+}
+
+/* ==== FIX: Encabezado y Resumen en Dividir Cuenta (Limpio) ==== */
+#modalDividir .modal-content {
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  overflow: hidden;
+}
+
+/* Header fijo arriba */
+/* Header fijo arriba */
+#modalDividir .modal-content h3 {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: linear-gradient(135deg, #42a5f5, #ec407a);
+  color: #fff;
+  padding: 18px 22px;
+  margin: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Contenedor con scroll */
+#contenedorFormasPago {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+/* Resumen fijo debajo del header */
+#contenedorFormasPago > .division-resumen {
+  position: sticky;
+  top: 60px; /* justo debajo del header */
+  z-index: 20;
+  background: #e7f1ff;
+  padding: 12px;
+  border-bottom: 2px solid #c3d9f7;
+  border-radius: 8px;
+
+  /* 👇 Esto genera el espacio para que las tarjetas no se metan debajo */
+  margin-bottom: 80px;
+}
+
+/* Footer fijo abajo */
+#contenedorFormasPago > .division-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 25;
+  background: #fff;
+  padding: 10px;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+/* Tarjetas normales (sin empuje artificial) */
+.division-persona-card {
+  margin-top: 0;
+}
+
+/* ==== ESTILOS MODERNOS PARA TODOS LOS BOTONES DE DIVIDIR CUENTA ==== */
+
+/* --- 1. Botones dentro de las filas de productos (Pagar, Asignar, Deshacer) --- */
+
+.button-wrapper {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.division-producto-row .division-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 20px;
+  border: 2px solid transparent;
+  color: white;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+}
+
+.division-producto-row .division-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+
+.division-producto-row .division-btn::before {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.division-producto-row .btn-pagar {
+  background-color: var(--rosa-medio);
+}
+.division-producto-row .btn-pagar:hover {
+  background-color: var(--rosa-hover);
+}
+.division-producto-row .btn-pagar::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c2.07-.4 3.5-1.65 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z'/%3E%3C/svg%3E");
+}
+
+.division-producto-row .btn-asignar {
+  background-color: #3949ab;
+}
+.division-producto-row .btn-asignar:hover {
+  background-color: #303f9f;
+}
+.division-producto-row .btn-asignar::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z'/%3E%3C/svg%3E");
+}
+
+.division-producto-row .deshacer-btn {
+  background-color: transparent;
+  border-color: #b0bec5;
+  color: #546e7a;
+  box-shadow: none;
+}
+.division-producto-row .deshacer-btn:hover {
+  background-color: #546e7a;
+  border-color: #546e7a;
+  color: white;
+  box-shadow: 0 4px 10px rgba(84, 110, 122, 0.2);
+}
+.division-producto-row .deshacer-btn::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23546e7a'%3E%3Cpath d='M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z'/%3E%3C/svg%3E");
+  transition: filter 0.25s ease;
+}
+.division-producto-row .deshacer-btn:hover::before {
+  filter: invert(1); /* Invierte el color del icono a blanco en hover */
+}
+
+/* --- 2. Botones en el pie de página del modal (Confirmar, Pausar, Cancelar) --- */
+
+.division-actions {
+  background: #f5f7fa;
+  border-top: 1px solid #e0e6ed;
+  padding: 14px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+}
+
+.division-actions button {
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  border: none;
+  color: white;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.12);
+}
+
+.division-actions button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.18);
+}
+
+#btnConfirmarDivision {
+  background-color: var(--verde);
+}
+#btnConfirmarDivision:hover {
+  background-color: var(--verde-hover);
+}
+
+#btnPausarDivision {
+  background-color: #ffb300;
+  color: #333;
+}
+#btnPausarDivision:hover {
+  background-color: #ffa000;
+}
+
+#btnCancelarDivision {
+  background-color: #f0f0f0;
+  color: #555;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+#btnCancelarDivision:hover {
+  background-color: #e0e0e0;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
 }
