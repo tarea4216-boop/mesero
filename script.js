@@ -298,44 +298,100 @@ buscarInput?.addEventListener("input", () => {
   });
 });
 
+// ==================== BLOQUE COMPLETO CORREGIDO ====================
+
+// Limita directamente el input de mesa a un máximo de 20
+if (mesaInput) mesaInput.setAttribute("max", "20");
+
 async function seleccionarProducto(producto) {
   const mesa = await obtenerNumeroMesa();
   if (!mesa) return;
+
+  // Verifica que la mesa no sea mayor a 20 antes de continuar
+  if (parseInt(mesa) > 20) {
+    showToast("⚠️ El número de mesa no puede ser mayor a 20.", "error");
+    return;
+  }
+
   const cantidad = await prompt(`¿Cuántos "${producto.nombre}"?`);
   if (!cantidad || isNaN(cantidad)) return;
-  const comentario = await prompt("Comentario (opcional):") || "";
   const cant = parseInt(cantidad);
+
+  // 🔹 Validar que la cantidad no sobrepase 20
+  if (cant > 20) {
+    showToast("⚠️ No se puede agregar más de 20 unidades de un solo producto.", "error");
+    return;
+  }
+
+  const comentario = await prompt("Comentario (opcional):") || "";
+
+  // Si la mesa no tiene pedidos locales aún, crearla
   if (!pedidosLocales[mesa]) pedidosLocales[mesa] = [];
   const pedido = pedidosLocales[mesa];
+
+  // Si ya existe el mismo producto con el mismo comentario, sumar cantidades
   const existente = pedido.find(p => p.nombre === producto.nombre && p.comentario === comentario);
   if (existente) {
+    // 🔹 Si la suma excede 20, bloquearla
+    if (existente.cantidad + cant > 20) {
+      showToast("⚠️ No se pueden tener más de 20 unidades del mismo producto en un solo pedido.", "error");
+      return;
+    }
     existente.cantidad += cant;
   } else {
     pedido.push({ ...producto, cantidad: cant, comentario });
   }
+
   actualizarTotal(mesa);
 }
 
 async function guardarPedido() {
   const mesa = mesaInput.value.trim();
+
+  // 🔹 Validar mesa vacía o inválida
   if (!mesa) return showToast("⚠️ Ingresa el número de mesa", "error");
+
+  // 🔹 Validar que el número de mesa no sea mayor a 20
+  if (parseInt(mesa) > 20) {
+    showToast("⚠️ El número de mesa no puede ser mayor a 20.", "error");
+    return;
+  }
+
   const pedidoNuevo = pedidosLocales[mesa];
-  if (!pedidoNuevo || pedidoNuevo.length === 0) return showToast("No hay productos en el pedido.", "error");
+  if (!pedidoNuevo || pedidoNuevo.length === 0)
+    return showToast("No hay productos en el pedido.", "error");
+
+  // 🔹 Verificar que ningún producto exceda 20 unidades
+  for (const item of pedidoNuevo) {
+    if (item.cantidad > 20) {
+      showToast(`⚠️ El producto "${item.nombre}" tiene más de 20 unidades. Corrige antes de guardar.`, "error");
+      return;
+    }
+  }
+
   try {
     const referencia = ref(db, "pedidos/" + mesa);
     const snapshot = await get(referencia);
     let pedidoFinal = [];
     let meseroAsignado = currentMeseroEmail;
+
     if (snapshot.exists()) {
       const datos = snapshot.val();
       const existentes = datos.items || [];
       meseroAsignado = datos.mesero || currentMeseroEmail;
       pedidoFinal = [...existentes];
+
       pedidoNuevo.forEach(nuevo => {
-        const encontrado = pedidoFinal.find(p =>
-          p.nombre === nuevo.nombre && p.comentario === nuevo.comentario
+        const encontrado = pedidoFinal.find(
+          p => p.nombre === nuevo.nombre && p.comentario === nuevo.comentario
         );
+
         if (encontrado) {
+          // 🔹 Bloquear si la suma supera 20
+          if (encontrado.cantidad + nuevo.cantidad > 20) {
+            showToast(`⚠️ No se pueden tener más de 20 unidades del producto "${nuevo.nombre}".`, "error");
+            throw new Error("Cantidad excedida");
+          }
           encontrado.cantidad += nuevo.cantidad;
         } else {
           pedidoFinal.push(nuevo);
@@ -344,10 +400,12 @@ async function guardarPedido() {
     } else {
       pedidoFinal = pedidoNuevo;
     }
+
     const totalCalc = pedidoFinal.reduce(
       (acc, item) => acc + (item.precio || 0) * (item.cantidad || 1),
       0
     );
+
     await set(referencia, {
       mesa,
       total: totalCalc,
@@ -356,21 +414,20 @@ async function guardarPedido() {
       actualizadoPor: currentMeseroEmail,
       actualizadoEn: Date.now()
     });
-    showToast(`✅ Pedido de mesa ${mesa} actualizado correctamente`, "success");
+
+    showToast(`✅ Pedido de mesa ${mesa} guardado correctamente`, "success");
     limpiarCampos();
     delete pedidosLocales[mesa];
   } catch (err) {
-    console.error("Error en guardarPedido:", err);
-    showToast("Error al guardar el pedido.", "error");
+    if (err.message !== "Cantidad excedida") {
+      console.error("Error en guardarPedido:", err);
+      showToast("Error al guardar el pedido.", "error");
+    }
   }
 }
 
-guardarBtn?.addEventListener("click", async () => {
-  await guardarPedido();
-  // --- INICIO: AÑADIR ESTA LÍNEA ---
-  inicializarSonidoPedidoListo(); 
-  // --- FIN: AÑADIR ESTA LÍNEA ---
-});
+// ================================================================
+
 
 async function verBoleta() {
   const mesa = await prompt("Número de mesa:");
@@ -958,7 +1015,7 @@ async function mostrarFormularioDivision(pedido, mesa, datosGuardados = null) {
     if (pendienteTotal > 0.01) {
       modoAsignarSaldo = true;
       renderUI();
-      showToast(`⚠️ Aún queda un saldo de S/ ${pendienteTotal.toFixed(2)}. Asigna el saldo a un cliente para continuar.`, "warning");
+      showToast(`⚠️ Aún queda un saldo de S/ ${pendienteTotal.toFixed(2)}. Asigna el saldo a un cliente para continuar.`, "error");
     } else {
       const formasPago = currentDivision.pagos.map((arrPagos,i)=>{
         const subtotal = arrPagos.reduce((a,b)=>a+b,0);
