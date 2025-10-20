@@ -9,16 +9,16 @@
 </head>
 
 <body>
-  <!-- 🔔 Contenedor de notificaciones -->
+  <!-- Contenedor de notificaciones -->
   <div id="toastContainer" class="toast-container"></div>
 
   <div class="container">
     <h1>🍤 Restaurante El Camarón de Oro</h1>
 
-    <!-- 🔐 Login -->
+    <!-- Login -->
     <section id="loginSection" class="card">
       <h2>Iniciar sesión</h2>
-      
+
       <label for="emailInput">Correo electrónico</label>
       <input 
         type="email" 
@@ -38,7 +38,7 @@
       <button id="loginBtn">Entrar</button>
     </section>
 
-    <!-- ✅ Panel de Mesero -->
+    <!-- Panel de Mesero -->
     <section id="meseroSection" class="card" style="display: none;">
       <h2>Panel del Mesero</h2>
 
@@ -77,16 +77,21 @@
     </section>
   </div>
 
-  <!-- ✅ MODAL DIVIDIR CUENTA -->
+  <!-- MODAL DIVIDIR CUENTA -->
   <div id="modalDividir" style="display:none;">
     <div class="modal-content">
+      <!-- Header fijo -->
       <h3>Dividir Cuenta</h3>
+
+      <!-- Aquí JS inserta resumen, tarjetas y footer -->
       <div id="contenedorFormasPago" class="division-personas"></div>
     </div>
   </div>
 
+  <!-- Otros modales -->
   <div id="modalPedidosPendientes" style="display:none;"></div>
   <div id="modalBoleta" style="display:none;"></div>
+
 
   <script type="module" src="script.js"></script>
 </body>
