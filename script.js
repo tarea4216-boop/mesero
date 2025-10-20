@@ -7,7 +7,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
 
 // -------------------- CONFIG FIREBASE --------------------
-// (He tomado la configuración de tu script anterior; si prefieres, reemplázala)
+
 const firebaseConfig = {
   apiKey: "AIzaSyAYXlV5SEgWfbRtacAEjec2Ve8x6hJtNBA",
   authDomain: "proyecto-restaurante-60eb0.firebaseapp.com",
