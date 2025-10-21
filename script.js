@@ -85,6 +85,8 @@ editarBtn?.addEventListener("click", editarPedido);
 completarBtn?.addEventListener("click", completarPedido);
 verPendientesBtn?.addEventListener("click", verPedidosPendientes);
 enviarWhatsappBtn?.addEventListener("click", enviarBoletaWhatsapp);
+guardarBtn?.addEventListener("click", guardarPedido); // 👈 AGREGA ESTA LÍNEA
+
 
 // Event listener para iniciar la división de cuenta
 dividirCuentaBtn?.addEventListener("click", async () => {
@@ -128,6 +130,8 @@ dividirCuentaBtn?.addEventListener("click", async () => {
 });
 
 // --- FIN: AÑADIR ESTE BLOQUE DE CÓDIGO ---
+
+
 
 
 // -------------------- UTIL --------------------
