@@ -132,8 +132,6 @@ dividirCuentaBtn?.addEventListener("click", async () => {
 // --- FIN: AÑADIR ESTE BLOQUE DE CÓDIGO ---
 
 
-
-
 // -------------------- UTIL --------------------
 const round2 = v => Math.round((v + Number.EPSILON) * 100) / 100;
 
@@ -554,43 +552,92 @@ async function completarPedido() {
 }
 
 async function verPedidosPendientes() {
-  const referencia = ref(db, "pedidos");
-  const snapshot = await get(referencia);
-  if (!snapshot.exists()) {
-    showToast("📭 No hay pedidos pendientes", "info");
-    limpiarCampos();
-    return;
+  try {
+    const refPedidos = ref(db, "pedidos");
+    const refOnline = ref(db, "pedidosOnline");
+
+    // 🧩 Obtener ambas tablas en paralelo
+    const [snapLocal, snapOnline] = await Promise.all([get(refPedidos), get(refOnline)]);
+
+    const pedidosLocal = snapLocal.exists() ? snapLocal.val() : {};
+    const pedidosOnline = snapOnline.exists() ? snapOnline.val() : {};
+
+    if (!snapLocal.exists() && !snapOnline.exists()) {
+      showToast("📭 No hay pedidos pendientes", "info");
+      limpiarCampos();
+      return;
+    }
+
+    // 🖼️ Construir el HTML del modal
+    let html = `<div class="pedidos-modal-content">`;
+    html += `<h2 style="color:#d63384;margin-bottom:18px;">Pedidos Pendientes</h2>`;
+    html += `<div class="pedidos-grid">`;
+
+    // 🧾 === Pedidos locales ===
+    for (const mesa in pedidosLocal) {
+      const pedido = pedidosLocal[mesa];
+      html += `
+        <div class="pedido-card">
+          <h3>🍽️ Mesa ${mesa}</h3>
+          <div class="pedido-mesero">Mesero: ${pedido.mesero || "—"}</div>
+          <div class="pedido-productos">
+      `;
+      (pedido.items || []).forEach(item => {
+        const cantidad = item.cantidad || item.qty || 1;
+        html += `<div class="pedido-producto">
+          <strong>${item.nombre}</strong> x${cantidad}
+          ${item.comentario ? `<span style="color:#ad1457;"> (${item.comentario})</span>` : ""}
+        </div>`;
+      });
+      html += `</div>
+        <div class="pedido-total">Total: S/ ${(pedido.total || 0).toFixed(2)}</div>
+        </div>
+      `;
+    }
+
+    // 🌐 === Pedidos Online ===
+    for (const id in pedidosOnline) {
+      const pedido = pedidosOnline[id];
+      html += `
+        <div class="pedido-card" style="border-color:#2196f3;">
+          <h3>💻 Pedido Online</h3>
+          <div class="pedido-mesero">Cliente: ${pedido.cliente || "Anónimo"}</div>
+          <div class="pedido-productos">
+      `;
+      (pedido.items || []).forEach(item => {
+        const cantidad = item.cantidad || item.qty || 1;
+        html += `<div class="pedido-producto">
+          <strong>${item.nombre}</strong> x${cantidad}
+          ${item.comentario ? `<span style="color:#1565c0;"> (${item.comentario})</span>` : ""}
+        </div>`;
+      });
+      html += `</div>
+        <div class="pedido-total">Total: S/ ${(pedido.total || 0).toFixed(2)}</div>
+        <div class="pedido-info" style="font-size:0.85rem;color:#555;">
+          <b>Ubicación:</b> ${pedido.ubicacion ? `(${pedido.ubicacion.lat.toFixed(4)}, ${pedido.ubicacion.lng.toFixed(4)})` : "—"}
+        </div>
+        </div>
+      `;
+    }
+
+    html += `</div>`; // cierra grid
+    html += `<button class="custom-modal-btn" id="cerrarPedidosPendientes">Cerrar</button></div>`;
+
+    // 🪟 Mostrar modal
+    const modal = document.getElementById("modalPedidosPendientes") || createModal(html);
+    if (modal.id !== "modalPedidosPendientes") modal.id = "modalPedidosPendientes";
+    else modal.innerHTML = html;
+
+    modal.className = "pedidos-modal-overlay";
+    modal.style.display = "flex";
+    modal.querySelector("#cerrarPedidosPendientes").onclick = () => (modal.style.display = "none");
+
+  } catch (err) {
+    console.error("Error al cargar pedidos pendientes:", err);
+    showToast("❌ Error al cargar pedidos pendientes", "error");
   }
-  const pedidos = snapshot.val();
-  let html = `<div class="pedidos-modal-content">`;
-  html += `<h2 style="color:#d63384;margin-bottom:18px;">Pedidos Pendientes</h2>`;
-  html += `<div class="pedidos-grid">`;
-  for (const mesa in pedidos) {
-    html += `
-      <div class="pedido-card">
-        <h3>Mesa ${mesa}</h3>
-        <div class="pedido-mesero">Mesero: ${pedidos[mesa].mesero}</div>
-        <div class="pedido-productos">
-    `;
-    pedidos[mesa].items.forEach(item => {
-      html += `<div class="pedido-producto">
-        <strong>${item.nombre}</strong> x${item.cantidad}
-        ${item.comentario ? `<span style="color:#ad1457;"> (${item.comentario})</span>` : ""}
-      </div>`;
-    });
-    html += `</div>
-      <div class="pedido-total">Total: S/ ${pedidos[mesa].total.toFixed(2)}</div>
-      </div>
-    `;
-  }
-  html += `</div>`; // cierra grid
-  html += `<button class="custom-modal-btn" id="cerrarPedidosPendientes">Cerrar</button></div>`;
-  const modal = document.getElementById("modalPedidosPendientes") || createModal(html);
-  if (modal.id !== "modalPedidosPendientes") modal.id = "modalPedidosPendientes"; else modal.innerHTML = html;
-  modal.className = "pedidos-modal-overlay";
-  modal.style.display = "flex";
-  modal.querySelector("#cerrarPedidosPendientes").onclick = () => modal.style.display = "none";
 }
+
 
 async function enviarBoletaWhatsapp() {
   const mesa = await prompt("Número de mesa:");
