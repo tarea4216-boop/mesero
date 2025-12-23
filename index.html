@@ -2,63 +2,95 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Restaurante el Camarón de Oro - Mesero</title>
+  <title>Restaurante El Camarón de Oro - Mesero</title>
   <link rel="icon" href="data:," />
   <link rel="stylesheet" href="style.css" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
 
 <body>
-  <!-- Contenedor de notificaciones -->
+
+  <!-- ================= TOAST ================= -->
   <div id="toastContainer" class="toast-container"></div>
 
   <div class="container">
     <h1>🍤 Restaurante El Camarón de Oro</h1>
 
-    <!-- Login -->
+    <!-- ================= LOGIN ================= -->
     <section id="loginSection" class="card">
       <h2>Iniciar sesión</h2>
 
       <label for="emailInput">Correo electrónico</label>
-      <input 
-        type="email" 
-        id="emailInput" 
-        name="email" 
+      <input
+        type="email"
+        id="emailInput"
         placeholder="Correo electrónico"
         autocomplete="username" />
 
       <label for="passwordInput">Contraseña</label>
-      <input 
-        type="password" 
-        id="passwordInput" 
-        name="password" 
+      <input
+        type="password"
+        id="passwordInput"
         placeholder="Contraseña"
         autocomplete="current-password" />
 
       <button id="loginBtn">Entrar</button>
     </section>
 
-    <!-- Panel de Mesero -->
-    <section id="meseroSection" class="card" style="display: none;">
+    <!-- ================= PANEL MESERO ================= -->
+    <section id="meseroSection" class="card" style="display:none;">
       <h2>Panel del Mesero</h2>
 
-      <div class="form-group">
-        <label for="mesaInput">Número de mesa</label>
-        <input 
-          id="mesaInput" 
-          type="number" 
-          name="mesa" 
-          placeholder="Número de mesa"
-          autocomplete="off" />
+      <!-- ====== MESAS ====== -->
+      <h3>Selecciona una mesa</h3>
+      <div id="mesasGrid" class="mesas-grid"></div>
 
-        <label for="buscarInput">Buscar producto</label>
-        <input 
-          id="buscarInput" 
-          type="text" 
-          name="buscar" 
-          placeholder="Buscar producto"
-          autocomplete="off" />
+      <!-- ====== ACCIONES GENERALES ====== -->
+      <div class="button-group">
+        <button id="verBoletaBtn">Ver Boleta</button>
+        <button id="editarBtn">Editar Pedido</button>
+        <button id="completarBtn">Completar Pedido</button>
+        <button id="verPendientesBtn">Ver Pendientes</button>
+        <button id="enviarWhatsappBtn">Enviar por WhatsApp</button>
+        <button id="dividirCuentaBtn">Dividir Cuenta</button>
+        <button id="logoutBtn" class="logout">Cerrar sesión</button>
       </div>
+    </section>
+  </div>
+
+  <!-- ================= MODAL OPCIONES MESA (NUEVO) ================= -->
+  <div id="modalOpcionesMesa" class="modal" style="display:none;">
+    <div class="modal-content">
+      <h3 id="tituloOpcionesMesa">Mesa</h3>
+
+      <div class="button-group vertical">
+        <button id="btnAgregarEditarMesa">
+          ➕ Agregar / Editar pedido
+        </button>
+
+        <button id="btnVerPedidoMesa">
+          📄 Ver pedido
+        </button>
+
+        <button onclick="cerrarOpcionesMesa()" class="secondary">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL PEDIDO ================= -->
+  <div id="modalPedido" class="modal" style="display:none;">
+    <div class="modal-content">
+
+      <h3 id="tituloMesa">Mesa</h3>
+
+      <label for="buscarInput">Buscar producto</label>
+      <input
+        id="buscarInput"
+        type="text"
+        placeholder="Buscar producto"
+        autocomplete="off" />
 
       <ul id="listaProductos"></ul>
 
@@ -66,36 +98,64 @@
 
       <div class="button-group">
         <button id="guardarBtn">Guardar Pedido</button>
-        <button id="verBoletaBtn">Ver Boleta</button>
-        <button id="editarBtn">Editar Pedido</button>
-        <button id="completarBtn">Completar Pedido</button>
-        <button id="verPendientesBtn">Ver Pendientes</button>
-        <button id="enviarWhatsappBtn">Enviar por WhatsApp</button>
-        <button id="logoutBtn" class="logout">Cerrar sesión</button>
-        <button id="dividirCuentaBtn">Dividir Cuenta</button>
+        <button onclick="cerrarFormularioPedido()" class="secondary">
+          Cancelar
+        </button>
       </div>
-    </section>
+
+    </div>
   </div>
 
-  <!-- MODAL DIVIDIR CUENTA -->
-  <div id="modalDividir" style="display:none;">
+  <!-- ================= MODAL DIVIDIR CUENTA ================= -->
+  <div id="modalDividir" class="modal" style="display:none;">
     <div class="modal-content">
-      <!-- Header fijo -->
       <h3>Dividir Cuenta</h3>
-
-      <!-- Aquí JS inserta resumen, tarjetas y footer -->
       <div id="contenedorFormasPago" class="division-personas"></div>
     </div>
   </div>
 
-  <!-- Otros modales -->
-  <div id="modalPedidosPendientes" style="display:none;"></div>
-  <div id="modalBoleta" style="display:none;"></div>
+  <!-- ================= OTROS MODALES ================= -->
+  <div id="modalPedidosPendientes" class="modal" style="display:none;"></div>
+  <div id="modalBoleta" class="modal" style="display:none;"></div>
 
-
+  <!-- ================= SCRIPT ================= -->
   <script type="module" src="script.js"></script>
+
+<!-- ================= MODAL AGREGAR PRODUCTO ================= -->
+<div id="modalAgregarProducto" class="modal" style="display:none;">
+  <div class="modal-content">
+    <h3 id="tituloAgregarProducto"></h3>
+
+    <label>Cantidad</label>
+    <input
+      type="number"
+      id="cantidadProducto"
+      min="1"
+      max="20"
+      value="1"
+    />
+
+    <label>Comentario (opcional)</label>
+    <input
+      type="text"
+      id="comentarioProducto"
+      placeholder="Ej: sin ají, bien cocido"
+    />
+
+    <div class="button-group">
+      <button id="confirmarAgregarProducto">Agregar</button>
+      <button onclick="cerrarModalAgregarProducto()" class="secondary">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>
+
+
 </body>
 </html>
+
+
 
 
 
