@@ -1366,10 +1366,10 @@ async function mostrarFormularioDivision(pedido, mesa, datosGuardados = null) {
 
 // --- INICIO: AÑADIR ESTE BLOQUE FINAL ---
 
-// === Notificación cuando un producto se marca como listo en cocina ===
 function escucharPedidosListos() {
-  const pedidosRef = ref(db, "pedidos"); 
-  onValue(pedidosRef, (snapshot) => {    
+  const pedidosRef = ref(db, "pedidos");
+
+  onValue(pedidosRef, (snapshot) => {
     const pedidos = snapshot.val();
     if (!pedidos) {
       estadoAnteriorPedidos = {};
@@ -1378,16 +1378,21 @@ function escucharPedidosListos() {
 
     Object.entries(pedidos).forEach(([mesa, pedido]) => {
       (pedido.items || []).forEach((item, i) => {
+        if (item.categoria !== "plato") return;
+
         const clave = mesa + "-" + i;
-        const ahoraListo = item.listo === true;
+        const total = item.cantidad || 1;
+        const lista = item.cantidadLista || 0;
+
+        const ahoraListo = lista >= total;
         const estabaListo = estadoAnteriorPedidos[clave];
 
-        // Evita notificar en la primera carga de la página
-        if (!primeraCarga) {
-          if (ahoraListo && !estabaListo) {
-            showToast(`✅ Pedido listo: ${item.nombre} (Mesa ${mesa})`, "success");
-            reproducirSonidoPedidoListo();
-          }
+        if (!primeraCarga && ahoraListo && !estabaListo) {
+          showToast(
+            `✅ Pedido listo: ${item.nombre} (Mesa ${mesa})`,
+            "success"
+          );
+          reproducirSonidoPedidoListo();
         }
 
         estadoAnteriorPedidos[clave] = ahoraListo;
@@ -1397,6 +1402,7 @@ function escucharPedidosListos() {
     primeraCarga = false;
   });
 }
+
 
 // Iniciar la escucha de pedidos listos cuando el script carga
 escucharPedidosListos();
