@@ -1365,28 +1365,29 @@ async function mostrarFormularioDivision(pedido, mesa, datosGuardados = null) {
 }
 
 // --- INICIO: AÑADIR ESTE BLOQUE FINAL ---
-
 function escucharPedidosListos() {
   const pedidosRef = ref(db, "pedidos");
 
   onValue(pedidosRef, (snapshot) => {
-    const pedidos = snapshot.val();
-    if (!pedidos) {
-      estadoAnteriorPedidos = {};
-      return;
-    }
+    const pedidos = snapshot.val() || {};
+
+    const nuevoEstado = {};
 
     Object.entries(pedidos).forEach(([mesa, pedido]) => {
       (pedido.items || []).forEach((item, i) => {
         if (item.categoria !== "plato") return;
 
-        const clave = mesa + "-" + i;
         const total = item.cantidad || 1;
         const lista = item.cantidadLista || 0;
 
-        const ahoraListo = lista >= total;
-        const estabaListo = estadoAnteriorPedidos[clave];
+        const clave = `${mesa}-${i}`;
+        const firmaActual = `${lista}/${total}`;
+        const firmaAnterior = estadoAnteriorPedidos[clave];
 
+        const ahoraListo = lista >= total;
+        const estabaListo = firmaAnterior && firmaAnterior.startsWith(`${total}/`);
+
+        // 🔔 Detectar transición REAL a listo
         if (!primeraCarga && ahoraListo && !estabaListo) {
           showToast(
             `✅ Pedido listo: ${item.nombre} (Mesa ${mesa})`,
@@ -1395,10 +1396,12 @@ function escucharPedidosListos() {
           reproducirSonidoPedidoListo();
         }
 
-        estadoAnteriorPedidos[clave] = ahoraListo;
+        nuevoEstado[clave] = firmaActual;
       });
     });
 
+    // 🔄 Reemplaza completamente el estado anterior
+    estadoAnteriorPedidos = nuevoEstado;
     primeraCarga = false;
   });
 }
