@@ -220,12 +220,18 @@ window.confirm = async function(msg) { return await showConfirmModal(msg); };
 window.prompt = async function(msg, placeholder = "") { return await showInputModal(msg, placeholder); };
 
 // -------------------- AUTH & UI --------------------
+
+let mesaSeleccionada = null;
+
+
+
 function actualizarUI(user) {
   if (user) {
     loginSection && (loginSection.style.display = "none");
     meseroSection && (meseroSection.style.display = "block");
     currentMeseroEmail = user.email;
     cargarProductos();
+    renderMesas();
   } else {
     loginSection && (loginSection.style.display = "block");
     meseroSection && (meseroSection.style.display = "none");
@@ -236,164 +242,413 @@ function actualizarUI(user) {
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     const uid = user.uid;
-    const rolRef = ref(db, 'roles/' + uid);
+    const rolRef = ref(db, "roles/" + uid);
     get(rolRef).then(snapshot => {
-      if (snapshot.exists() && snapshot.val() === 'mesero') {
+      if (snapshot.exists() && snapshot.val() === "mesero") {
         actualizarUI(user);
       } else {
-        showToast("🚫 Acceso denegado: No tienes el rol de mesero.", "error");
+        showToast("🚫 Acceso denegado", "error");
         signOut(auth);
       }
-    }).catch(() => actualizarUI(user));
+    });
   } else {
     actualizarUI(null);
   }
 });
 
-loginBtn?.addEventListener("click", async () => {
+loginBtn?.addEventListener("click", () => {
   const email = emailInput.value.trim();
   const password = passwordInput.value;
-  if (!email || !password) return showToast("Por favor ingresa tu correo y contraseña.", "error");
+  if (!email || !password) {
+    return showToast("Completa los campos", "error");
+  }
+
   signInWithEmailAndPassword(auth, email, password)
     .then(() => showToast("¡Bienvenido!", "success"))
-    .catch(() => showToast("Credenciales incorrectas o usuario no encontrado.", "error"));
+    .catch(() => showToast("Credenciales incorrectas", "error"));
 });
 
 logoutBtn?.addEventListener("click", () => {
-  signOut(auth).then(() => showToast("Sesión cerrada correctamente.", "info"))
-    .catch(() => showToast("Error al cerrar sesión.", "error"));
+  signOut(auth).then(() =>
+    showToast("Sesión cerrada", "info")
+  );
 });
 
 function limpiarCampos() {
-  mesaInput && (mesaInput.value = "");
   buscarInput && (buscarInput.value = "");
   lista && (lista.innerHTML = "");
   totalTexto && (totalTexto.textContent = "Total: S/ 0.00");
   total = 0;
 }
 
+// -------------------- MESAS --------------------
+
+async function renderMesas() {
+  const cont = document.getElementById("mesasGrid");
+  if (!cont) return;
+
+  cont.innerHTML = "";
+
+  const snapshot = await get(ref(db, "pedidos"));
+  const pedidos = snapshot.exists() ? snapshot.val() : {};
+
+  for (let i = 1; i <= 21; i++) {
+    const btn = document.createElement("button");
+    btn.textContent = `Mesa ${i}`;
+
+    btn.className =
+      "mesa-btn " +
+      (pedidos[i] ? "mesa-ocupada " : "mesa-libre ") +
+      (mesaSeleccionada === i ? "seleccionada" : "");
+
+    btn.addEventListener("click", () => {
+      mesaSeleccionada = i;
+      renderMesas();
+
+      if (pedidos[i]) {
+        abrirOpcionesMesa(i);
+      } else {
+        abrirFormularioPedido(i);
+      }
+    });
+
+    cont.appendChild(btn);
+  }
+}
+
+// -------------------- MODAL OPCIONES MESA --------------------
+
+const modalOpcionesMesa = document.getElementById("modalOpcionesMesa");
+const tituloOpcionesMesa = document.getElementById("tituloOpcionesMesa");
+const btnAgregarEditarMesa = document.getElementById("btnAgregarEditarMesa");
+const btnVerPedidoMesa = document.getElementById("btnVerPedidoMesa");
+
+function abrirOpcionesMesa(mesa) {
+  mesaSeleccionada = mesa;
+  tituloOpcionesMesa.textContent = `Mesa ${mesa}`;
+  modalOpcionesMesa.style.display = "flex";
+}
+
+function cerrarOpcionesMesa() {
+  modalOpcionesMesa.style.display = "none";
+}
+
+window.cerrarOpcionesMesa = cerrarOpcionesMesa;
+
+// 👉 BOTÓN: AGREGAR / EDITAR
+btnAgregarEditarMesa.addEventListener("click", () => {
+  if (!mesaSeleccionada) return;
+
+  cerrarOpcionesMesa();
+  abrirFormularioPedido(mesaSeleccionada);
+});
+
+// 👉 BOTÓN: VER PEDIDO
+btnVerPedidoMesa.addEventListener("click", () => {
+  if (!mesaSeleccionada) return;
+
+  cerrarOpcionesMesa();
+  abrirModalBoleta(mesaSeleccionada);
+});
+
+// -------------------- MODAL PEDIDO --------------------
+
+const modalPedido = document.getElementById("modalPedido");
+const tituloMesa = document.getElementById("tituloMesa");
+
+function abrirFormularioPedido(mesa) {
+  mesaSeleccionada = mesa;
+  tituloMesa.textContent = `Mesa ${mesa}`;
+  modalPedido.style.display = "flex";
+}
+
+function cerrarFormularioPedido() {
+  modalPedido.style.display = "none";
+  limpiarCampos();
+}
+
+window.cerrarFormularioPedido = cerrarFormularioPedido;
+
+// -------------------- BOLETA + EDICIÓN --------------------
+
+async function abrirModalBoleta(mesa) {
+  const modal = document.getElementById("modalBoleta");
+  modal.innerHTML = "";
+  modal.style.display = "flex";
+
+  const refMesa = ref(db, "pedidos/" + mesa);
+  const snapshot = await get(refMesa);
+
+  if (!snapshot.exists()) {
+    modal.innerHTML = `
+      <div class="modal-content">
+        <h3>Mesa ${mesa}</h3>
+        <p>No hay pedido registrado</p>
+        <button id="cerrarBoletaBtn">Cerrar</button>
+      </div>
+    `;
+    document.getElementById("cerrarBoletaBtn").onclick = () => modal.style.display = "none";
+    return;
+  }
+
+  const datos = snapshot.val();
+  let pedido = [...datos.items];
+
+  function puedeEditar(item) {
+    if (!item.creadoEn) return false;
+    const diezMin = 10 * 60 * 1000;
+    return Date.now() - item.creadoEn <= diezMin;
+  }
+
+  function render() {
+    let html = `
+      <div class="modal-content boleta">
+        <h3>Pedido - Mesa ${mesa}</h3>
+        <div class="pedido-mesero">Mesero: ${datos.mesero}</div>
+        <div class="pedido-productos">
+    `;
+
+    pedido.forEach((item, i) => {
+      const editable = puedeEditar(item);
+
+      html += `
+        <div class="pedido-producto-row">
+          <div class="pedido-info">
+            <strong>${item.nombre}</strong> x${item.cantidad}
+            ${item.comentario ? `<span class="comentario">(${item.comentario})</span>` : ""}
+          </div>
+
+          ${
+            editable
+              ? `
+              <div class="pedido-acciones">
+                <button data-action="minus" data-index="${i}">➖</button>
+                <button data-action="plus" data-index="${i}">➕</button>
+                <button data-action="delete" data-index="${i}">🗑️</button>
+              </div>
+            `
+              : `<span class="no-editable">⏱️</span>`
+          }
+        </div>
+      `;
+    });
+
+    const total = pedido.reduce(
+      (acc, p) => acc + (p.precio || 0) * (p.cantidad || 1),
+      0
+    );
+
+    html += `
+        </div>
+        <div class="pedido-total">Total: S/ ${total.toFixed(2)}</div>
+
+        <div class="button-group">
+          <button id="guardarCambiosBoleta">Guardar cambios</button>
+          <button id="cerrarBoletaBtn" class="secondary">Cerrar</button>
+        </div>
+      </div>
+    `;
+
+    modal.innerHTML = html;
+
+    // Acciones
+    modal.querySelectorAll("button[data-action]").forEach(btn => {
+      btn.onclick = () => {
+        const idx = parseInt(btn.dataset.index);
+        const action = btn.dataset.action;
+
+        if (!puedeEditar(pedido[idx])) {
+          showToast("⏱️ Tiempo de edición expirado", "error");
+          return;
+        }
+
+       if (action === "plus") {
+  pedido[idx].cantidad++;
+
+  // 🔧 CLAVE: si ya había productos listos, NO tocar cantidadLista
+  if (typeof pedido[idx].cantidadLista !== "number") {
+    pedido[idx].cantidadLista = 0;
+  }
+}
+
+       if (action === "minus" && pedido[idx].cantidad > 1) {
+  pedido[idx].cantidad--;
+
+  // Ajuste de seguridad
+  if (
+    typeof pedido[idx].cantidadLista === "number" &&
+    pedido[idx].cantidadLista > pedido[idx].cantidad
+  ) {
+    pedido[idx].cantidadLista = pedido[idx].cantidad;
+  }
+}
+
+        if (action === "delete") pedido.splice(idx, 1);
+
+        render();
+      };
+    });
+
+    document.getElementById("cerrarBoletaBtn").onclick = () => {
+      modal.style.display = "none";
+    };
+
+    document.getElementById("guardarCambiosBoleta").onclick = async () => {
+      await set(refMesa, {
+        ...datos,
+        items: pedido,
+        total,
+        actualizadoPor: currentMeseroEmail,
+        actualizadoEn: Date.now()
+      });
+
+      showToast("✏ Pedido actualizado", "success");
+      modal.style.display = "none";
+      renderMesas();
+    };
+  }
+
+  render();
+}
+
+
+
 // -------------------- PRODUCTOS & PEDIDOS --------------------
-async function obtenerNumeroMesa() {
-  const mesa = mesaInput.value.trim();
-  if (!mesa) {
-    showToast("⚠️ Ingresa el número de mesa", "error");
+
+let productoSeleccionado = null;
+
+// 🔹 Mesa activa
+function obtenerMesaActiva() {
+  if (!mesaSeleccionada) {
+    showToast("Selecciona una mesa", "error");
     return null;
   }
-  return mesa;
+  return mesaSeleccionada;
 }
 
+// 🔹 Total
 function actualizarTotal(mesa) {
   const pedido = pedidosLocales[mesa] || [];
-  total = pedido.reduce((acc, item) => acc + (item.precio || 0) * (item.cantidad || 1), 0);
-  totalTexto && (totalTexto.textContent = `Total: S/ ${total.toFixed(2)}`);
+  total = pedido.reduce(
+    (acc, item) => acc + (item.precio || 0) * item.cantidad,
+    0
+  );
+  totalTexto.textContent = `Total: S/ ${total.toFixed(2)}`;
 }
 
+// 🔹 Buscar productos
 buscarInput?.addEventListener("input", () => {
   const texto = buscarInput.value.toLowerCase();
   lista.innerHTML = "";
-  productos.filter(p => p.nombre.toLowerCase().includes(texto)).forEach(p => {
-    const li = document.createElement("li");
-    li.innerHTML = `<strong>${p.nombre}</strong><br><small>${p.descripcion || ""}</small>`;
-    li.style.cursor = "pointer";
-    li.onclick = () => seleccionarProducto(p);
-    lista.appendChild(li);
-  });
+
+  productos
+    .filter(p => p.nombre.toLowerCase().includes(texto))
+    .forEach(p => {
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <strong>${p.nombre}</strong><br>
+        <small>${p.descripcion || ""}</small>
+      `;
+      li.onclick = () => seleccionarProducto(p);
+      lista.appendChild(li);
+    });
 });
 
-// ==================== BLOQUE COMPLETO CORREGIDO ====================
-
-// Limita directamente el input de mesa a un máximo de 20
-if (mesaInput) mesaInput.setAttribute("max", "20");
-
-async function seleccionarProducto(producto) {
-  const mesa = await obtenerNumeroMesa();
+// 🔹 Al seleccionar producto → abrir modal
+function seleccionarProducto(producto) {
+  const mesa = obtenerMesaActiva();
   if (!mesa) return;
 
-  // Verifica que la mesa no sea mayor a 20 antes de continuar
-  if (parseInt(mesa) > 20) {
-    showToast("⚠️ El número de mesa no puede ser mayor a 20.", "error");
-    return;
-  }
+  productoSeleccionado = producto;
 
-  const cantidad = await prompt(`¿Cuántos "${producto.nombre}"?`);
-  if (!cantidad || isNaN(cantidad)) return;
-  const cant = parseInt(cantidad);
+  document.getElementById("tituloAgregarProducto").textContent =
+    `Agregar: ${producto.nombre}`;
 
-  // 🔹 Validar que la cantidad no sobrepase 20
-  if (cant > 20) {
-    showToast("⚠️ No se puede agregar más de 20 unidades de un solo producto.", "error");
-    return;
-  }
+  document.getElementById("cantidadProducto").value = 1;
+  document.getElementById("comentarioProducto").value = "";
 
-  const comentario = await prompt("Comentario (opcional):") || "";
-
-  // Si la mesa no tiene pedidos locales aún, crearla
-  if (!pedidosLocales[mesa]) pedidosLocales[mesa] = [];
-  const pedido = pedidosLocales[mesa];
-
-  // Si ya existe el mismo producto con el mismo comentario, sumar cantidades
-  const existente = pedido.find(p => p.nombre === producto.nombre && p.comentario === comentario);
-  if (existente) {
-    // 🔹 Si la suma excede 20, bloquearla
-    if (existente.cantidad + cant > 20) {
-      showToast("⚠️ No se pueden tener más de 20 unidades del mismo producto en un solo pedido.", "error");
-      return;
-    }
-    existente.cantidad += cant;
-  } else {
-    pedido.push({ ...producto, cantidad: cant, comentario });
-  }
-
-  actualizarTotal(mesa);
+  document.getElementById("modalAgregarProducto").style.display = "flex";
 }
 
-async function guardarPedido() {
-  const mesa = mesaInput.value.trim();
+// 🔹 Confirmar agregar producto
+document
+  .getElementById("confirmarAgregarProducto")
+  .addEventListener("click", () => {
+    const mesa = obtenerMesaActiva();
+    if (!mesa || !productoSeleccionado) return;
 
-  // 🔹 Validar mesa vacía o inválida
-  if (!mesa) return showToast("⚠️ Ingresa el número de mesa", "error");
+    const cant = parseInt(
+      document.getElementById("cantidadProducto").value
+    );
 
-  // 🔹 Validar que el número de mesa no sea mayor a 20
-  if (parseInt(mesa) > 20) {
-    showToast("⚠️ El número de mesa no puede ser mayor a 20.", "error");
-    return;
-  }
-
-  const pedidoNuevo = pedidosLocales[mesa];
-  if (!pedidoNuevo || pedidoNuevo.length === 0)
-    return showToast("No hay productos en el pedido.", "error");
-
-  // 🔹 Verificar que ningún producto exceda 20 unidades
-  for (const item of pedidoNuevo) {
-    if (item.cantidad > 20) {
-      showToast(`⚠️ El producto "${item.nombre}" tiene más de 20 unidades. Corrige antes de guardar.`, "error");
+    if (!cant || cant <= 0 || cant > 20) {
+      showToast("Cantidad inválida", "error");
       return;
     }
+
+    const comentario =
+      document.getElementById("comentarioProducto").value.trim();
+
+    if (!pedidosLocales[mesa]) pedidosLocales[mesa] = [];
+    const pedido = pedidosLocales[mesa];
+
+    const existente = pedido.find(
+      p =>
+        p.nombre === productoSeleccionado.nombre &&
+        p.comentario === comentario
+    );
+
+    if (existente) {
+      existente.cantidad += cant;
+    } else {
+      pedido.push({
+        ...productoSeleccionado,
+        cantidad: cant,
+        comentario,
+        creadoEn: Date.now()
+      });
+    }
+
+    actualizarTotal(mesa);
+    cerrarModalAgregarProducto();
+  });
+
+// 🔹 Cerrar modal
+function cerrarModalAgregarProducto() {
+  document.getElementById("modalAgregarProducto").style.display = "none";
+  productoSeleccionado = null;
+}
+
+// 🔹 Guardar pedido
+async function guardarPedido() {
+  const mesa = obtenerMesaActiva();
+  if (!mesa) return;
+
+  const pedidoNuevo = pedidosLocales[mesa];
+  if (!pedidoNuevo || pedidoNuevo.length === 0) {
+    showToast("Pedido vacío", "error");
+    return;
   }
 
   try {
-    const referencia = ref(db, "pedidos/" + mesa);
-    const snapshot = await get(referencia);
+    const refMesa = ref(db, "pedidos/" + mesa);
+    const snapshot = await get(refMesa);
+
     let pedidoFinal = [];
     let meseroAsignado = currentMeseroEmail;
 
     if (snapshot.exists()) {
       const datos = snapshot.val();
-      const existentes = datos.items || [];
+      pedidoFinal = [...(datos.items || [])];
       meseroAsignado = datos.mesero || currentMeseroEmail;
-      pedidoFinal = [...existentes];
 
       pedidoNuevo.forEach(nuevo => {
         const encontrado = pedidoFinal.find(
-          p => p.nombre === nuevo.nombre && p.comentario === nuevo.comentario
+          p =>
+            p.nombre === nuevo.nombre &&
+            p.comentario === nuevo.comentario
         );
-
         if (encontrado) {
-          // 🔹 Bloquear si la suma supera 20
-          if (encontrado.cantidad + nuevo.cantidad > 20) {
-            showToast(`⚠️ No se pueden tener más de 20 unidades del producto "${nuevo.nombre}".`, "error");
-            throw new Error("Cantidad excedida");
-          }
           encontrado.cantidad += nuevo.cantidad;
         } else {
           pedidoFinal.push(nuevo);
@@ -404,11 +659,11 @@ async function guardarPedido() {
     }
 
     const totalCalc = pedidoFinal.reduce(
-      (acc, item) => acc + (item.precio || 0) * (item.cantidad || 1),
+      (acc, item) => acc + (item.precio || 0) * item.cantidad,
       0
     );
 
-    await set(referencia, {
+    await set(refMesa, {
       mesa,
       total: totalCalc,
       items: pedidoFinal,
@@ -417,16 +672,16 @@ async function guardarPedido() {
       actualizadoEn: Date.now()
     });
 
-    showToast(`✅ Pedido de mesa ${mesa} guardado correctamente`, "success");
-    limpiarCampos();
+    showToast("Pedido guardado", "success");
     delete pedidosLocales[mesa];
+    cerrarFormularioPedido();
+    renderMesas();
   } catch (err) {
-    if (err.message !== "Cantidad excedida") {
-      console.error("Error en guardarPedido:", err);
-      showToast("Error al guardar el pedido.", "error");
-    }
+    console.error(err);
+    showToast("Error al guardar", "error");
   }
 }
+
 
 // ================================================================
 
@@ -537,19 +792,42 @@ async function editarPedido() {
 async function completarPedido() {
   const mesa = await prompt("Número de mesa a completar:");
   if (!mesa) return;
-  const refMesa = ref(db, "pedidos/" + mesa);
-  const snapshot = await get(refMesa);
-  if (!snapshot.exists()) return showToast("❌ No hay pedido", "error");
-  const pedido = snapshot.val();
-  const timestamp = Date.now();
-  const refHistorial = ref(db, "historial");
-  push(refHistorial, { ...pedido, fecha: timestamp }).then(() => {
-    remove(refMesa).then(() => {
-      showToast(`✅ Pedido de mesa ${mesa} completado y archivado`, "success");
-      limpiarCampos();
+
+  try {
+    const refMesa = ref(db, "pedidos/" + mesa);
+    const snapshot = await get(refMesa);
+
+    if (!snapshot.exists()) {
+      showToast("❌ No hay pedido", "error");
+      return;
+    }
+
+    const pedido = snapshot.val();
+
+    await push(ref(db, "historial"), {
+      ...pedido,
+      mesa,
+      completadoEn: Date.now()
     });
-  });
+
+    await remove(refMesa);
+
+    showToast(`✅ Pedido de mesa ${mesa} completado`, "success");
+
+    limpiarCampos();
+
+    // 🔑 CLAVE: liberar estado local
+    mesaSeleccionada = null;
+
+    // 🔁 Re-render desde Firebase
+    renderMesas();
+
+  } catch (err) {
+    console.error(err);
+    showToast("❌ Error al completar pedido", "error");
+  }
 }
+
 
 async function verPedidosPendientes() {
   try {
