@@ -1701,3 +1701,269 @@ li:hover { background-color: var(--borde); }
   background-color: #e0e0e0;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
 }
+
+
+/* ================== MESAS ================== */
+.mesas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.mesa-btn {
+  padding: 14px 0;
+  font-size: 15px;
+  font-weight: bold;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* 🟢 Mesa libre */
+.mesa-libre {
+  background: #e9f9ef;
+  color: #1f7a45;
+  border: 2px solid #2ecc71;
+}
+
+.mesa-libre:hover {
+  background: #2ecc71;
+  color: #fff;
+}
+
+/* 🔴 Mesa ocupada */
+.mesa-ocupada {
+  background: #fdecea;
+  color: #a61b1b;
+  border: 2px solid #e74c3c;
+}
+
+.mesa-ocupada:hover {
+  background: #e74c3c;
+  color: #fff;
+}
+
+/* 🔵 Mesa seleccionada (se agrega por JS si deseas luego) */
+.mesa-btn.seleccionada {
+  background: #007bff !important;
+  color: #fff;
+  border-color: #0056b3;
+}
+
+/* ================== LISTA DE PRODUCTOS ================== */
+#listaProductos {
+  list-style: none;
+  margin-top: 10px;
+}
+
+#listaProductos li {
+  background: #fff;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  transition: background 0.2s;
+}
+
+#listaProductos li:hover {
+  background: #f0f8ff;
+}
+
+#listaProductos strong {
+  font-size: 16px;
+}
+
+#listaProductos small {
+  color: #666;
+}
+
+/* ================== TOTAL ================== */
+#totalTexto {
+  font-size: 20px;
+  font-weight: bold;
+  margin: 14px 0;
+  text-align: right;
+}
+
+/* ================= MODAL PEDIDO ================= */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #fff;
+  width: 90%;
+  max-width: 500px;
+  max-height: 85vh;
+  padding: 20px;
+  border-radius: 14px;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+/* ================= MESA SELECCIONADA ================= */
+
+.mesa-btn.seleccionada {
+  background: #ff5c8a !important;
+  color: #fff !important;
+  border-color: #d6336c !important;
+  box-shadow: 0 0 0 4px rgba(255, 92, 138, 0.35);
+  transform: scale(1.05);
+}
+
+/* ================= PRODUCTOS EN MODAL ================= */
+
+#listaProductos {
+  list-style: none;
+  margin: 12px 0;
+  padding: 0;
+}
+
+#listaProductos li {
+  padding: 12px;
+  border-radius: 10px;
+  background: #f8f9fa;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+#listaProductos li:hover {
+  background: #e9ecef;
+}
+
+/* ================= TOTAL ================= */
+
+#totalTexto {
+  font-size: 18px;
+  font-weight: bold;
+  text-align: right;
+  margin: 12px 0;
+}
+
+
+/* ================= BOLETA / PEDIDO ================= */
+
+.modal-content.boleta {
+  max-width: 520px;
+  width: 95%;
+}
+
+.pedido-mesero {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 10px;
+}
+
+.pedido-productos {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.pedido-producto-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8f9fa;
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+
+.pedido-info {
+  font-size: 15px;
+  line-height: 1.3;
+}
+
+.pedido-info .comentario {
+  display: block;
+  font-size: 13px;
+  color: #555;
+  margin-top: 2px;
+}
+
+.pedido-acciones {
+  display: flex;
+  gap: 6px;
+}
+
+.pedido-acciones button {
+  border: none;
+  background: #e9ecef;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background 0.2s;
+}
+
+.pedido-acciones button:hover {
+  background: #ced4da;
+}
+
+.no-editable {
+  font-size: 18px;
+  opacity: 0.5;
+}
+
+.pedido-total {
+  font-size: 20px;
+  font-weight: bold;
+  text-align: right;
+  margin-top: 10px;
+}
+
+/* ================= MODAL AGREGAR PRODUCTO ================= */
+
+#modalAgregarProducto .modal-content {
+  max-width: 420px;
+}
+
+#modalAgregarProducto label {
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 10px;
+  display: block;
+}
+
+#modalAgregarProducto input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ced4da;
+  margin-top: 4px;
+  font-size: 15px;
+}
+
+#modalAgregarProducto input:focus {
+  outline: none;
+  border-color: #339af0;
+  box-shadow: 0 0 0 2px rgba(51, 154, 240, 0.25);
+}
+
+
+
+/* ================= RESPONSIVE ================= */
+
+@media (max-width: 480px) {
+  .pedido-producto-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .pedido-acciones {
+    align-self: flex-end;
+  }
+}
