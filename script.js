@@ -30,27 +30,45 @@ let pedidosLocales = {};
 let total = 0;
 
 // --- INICIO: AÑADIR ESTE BLOQUE ---
-let audioPedidoListo;
-let estadoAnteriorPedidos = {}; // para detectar cambios
-let primeraCarga = true;
+let audioPedidoListo = null;
+let sonidoHabilitado = false;
 
+// 🔓 Se ejecuta SOLO una vez con el primer click real del usuario
 function inicializarSonidoPedidoListo() {
-  if (!audioPedidoListo) {
-    audioPedidoListo = new Audio("noti.mp3"); // coloca tu notificación
-  }
-  // "Desbloquea" el audio en navegadores modernos
-  audioPedidoListo.muted = true;
-  audioPedidoListo.play().then(() => {
-    audioPedidoListo.pause();
-    audioPedidoListo.currentTime = 0;
-    audioPedidoListo.muted = false;
-  }).catch(() => {});
+  if (sonidoHabilitado) return;
+
+  audioPedidoListo = new Audio("noti.mp3");
+  audioPedidoListo.volume = 0.9;
+
+  // Intento real de reproducción (requerido por el navegador)
+  audioPedidoListo.currentTime = 0;
+  audioPedidoListo
+    .play()
+    .then(() => {
+      audioPedidoListo.pause();
+      audioPedidoListo.currentTime = 0;
+      sonidoHabilitado = true;
+      console.log("🔊 Sonido de notificación desbloqueado");
+    })
+    .catch(() => {});
 }
 
+// 🔔 Reproduce el sonido SOLO si ya fue desbloqueado
 function reproducirSonidoPedidoListo() {
-  audioPedidoListo?.play().catch(() => {});
+  if (!sonidoHabilitado || !audioPedidoListo) return;
+  audioPedidoListo.currentTime = 0;
+  audioPedidoListo.play().catch(() => {});
 }
-// --- FIN: AÑADIR ESTE BLOQUE ---
+
+// 👂 Listener invisible → primer click del usuario
+document.addEventListener(
+  "click",
+  () => {
+    inicializarSonidoPedidoListo();
+  },
+  { once: true } // 🔥 SOLO UNA VEZ
+);
+
 
 
 // -------------------- DOM ELEMENTS --------------------
@@ -1365,29 +1383,32 @@ async function mostrarFormularioDivision(pedido, mesa, datosGuardados = null) {
 }
 
 // --- INICIO: AÑADIR ESTE BLOQUE FINAL ---
+let estadoAnteriorPedidos = {}; // firma anterior por producto
+let primeraCarga = true;
+
 function escucharPedidosListos() {
   const pedidosRef = ref(db, "pedidos");
 
   onValue(pedidosRef, (snapshot) => {
     const pedidos = snapshot.val() || {};
-
     const nuevoEstado = {};
 
     Object.entries(pedidos).forEach(([mesa, pedido]) => {
-      (pedido.items || []).forEach((item, i) => {
+      (pedido.items || []).forEach((item, index) => {
         if (item.categoria !== "plato") return;
 
         const total = item.cantidad || 1;
         const lista = item.cantidadLista || 0;
 
-        const clave = `${mesa}-${i}`;
+        const clave = `${mesa}-${index}`;
         const firmaActual = `${lista}/${total}`;
         const firmaAnterior = estadoAnteriorPedidos[clave];
 
         const ahoraListo = lista >= total;
-        const estabaListo = firmaAnterior && firmaAnterior.startsWith(`${total}/`);
+        const estabaListo =
+          firmaAnterior && firmaAnterior.startsWith(`${total}/`);
 
-        // 🔔 Detectar transición REAL a listo
+        // 🔔 SOLO cuando pasa de NO listo → listo
         if (!primeraCarga && ahoraListo && !estabaListo) {
           showToast(
             `✅ Pedido listo: ${item.nombre} (Mesa ${mesa})`,
@@ -1400,15 +1421,14 @@ function escucharPedidosListos() {
       });
     });
 
-    // 🔄 Reemplaza completamente el estado anterior
     estadoAnteriorPedidos = nuevoEstado;
     primeraCarga = false;
   });
 }
 
-
-// Iniciar la escucha de pedidos listos cuando el script carga
+// 🚀 Iniciar escucha
 escucharPedidosListos();
+
 
 // --- FIN: AÑADIR ESTE BLOQUE FINAL ---
 
