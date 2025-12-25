@@ -40,7 +40,6 @@ function inicializarSonidoPedidoListo() {
   audioPedidoListo = new Audio("noti.mp3");
   audioPedidoListo.volume = 0.9;
 
-  // Intento real de reproducción (requerido por el navegador)
   audioPedidoListo.currentTime = 0;
   audioPedidoListo
     .play()
@@ -66,9 +65,8 @@ document.addEventListener(
   () => {
     inicializarSonidoPedidoListo();
   },
-  { once: true } // 🔥 SOLO UNA VEZ
+  { once: true }
 );
-
 
 
 // -------------------- DOM ELEMENTS --------------------
@@ -1382,16 +1380,18 @@ async function mostrarFormularioDivision(pedido, mesa, datosGuardados = null) {
   renderUI();
 }
 
-// --- INICIO: AÑADIR ESTE BLOQUE FINAL ---
-let estadoAnteriorPedidos = {}; // firma anterior por producto
+// ==============================
+// 🔔 ESCUCHA DE PEDIDOS LISTOS
+// ==============================
+
+let estadoAnteriorPedidos = {};
 let primeraCarga = true;
 
-function escucharPedidosListos() {
-  escucharNodo("pedidos");
-  escucharNodo("pedidosOnline");
-}
+// 🔥 ESCUCHAR AMBOS NODOS
+escucharPedidosListos("pedidos");
+escucharPedidosListos("pedidosOnline");
 
-function escucharNodo(ruta) {
+function escucharPedidosListos(ruta) {
   const pedidosRef = ref(db, ruta);
 
   onValue(pedidosRef, (snapshot) => {
@@ -1413,6 +1413,7 @@ function escucharNodo(ruta) {
         const estabaListo =
           firmaAnterior && firmaAnterior.startsWith(`${total}/`);
 
+        // 🔔 Notificar SOLO cuando pasa a listo
         if (!primeraCarga && ahoraListo && !estabaListo) {
           showToast(
             `✅ Pedido listo: ${item.nombre} (${ruta === "pedidos" ? "Mesa" : "Online"} ${mesa})`,
@@ -1429,13 +1430,10 @@ function escucharNodo(ruta) {
       ...estadoAnteriorPedidos,
       ...nuevoEstado
     };
+
     primeraCarga = false;
   });
 }
-
-// 🚀 Iniciar escucha
-escucharPedidosListos();
-
 
 // --- FIN: AÑADIR ESTE BLOQUE FINAL ---
 
