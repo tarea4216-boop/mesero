@@ -68,7 +68,6 @@ document.addEventListener(
   { once: true }
 );
 
-
 // -------------------- DOM ELEMENTS --------------------
 const loginSection = document.getElementById("loginSection");
 const meseroSection = document.getElementById("meseroSection");
@@ -78,7 +77,6 @@ const passwordInput = document.getElementById("passwordInput");
 const loginBtn = document.getElementById("loginBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 
-const mesaInput = document.getElementById("mesaInput");
 const buscarInput = document.getElementById("buscarInput");
 const lista = document.getElementById("listaProductos");
 const totalTexto = document.getElementById("totalTexto");
@@ -88,20 +86,18 @@ const guardarBtn = document.getElementById("guardarBtn");
 const editarBtn = document.getElementById("editarBtn");
 const completarBtn = document.getElementById("completarBtn");
 const verPendientesBtn = document.getElementById("verPendientesBtn");
-const enviarWhatsappBtn = document.getElementById("enviarWhatsappBtn");
+const enviarBoletaBtn = document.getElementById("enviarBoletaBtn");
 const dividirCuentaBtn = document.getElementById("dividirCuentaBtn");
 
 const contenedorFormasPago = document.getElementById("contenedorFormasPago");
 
-// --- INICIO: AÑADIR ESTE BLOQUE DE CÓDIGO ---
-
-// Event listeners para los botones de acción del panel de mesero
+// -------------------- EVENT LISTENERS --------------------
 verBoletaBtn?.addEventListener("click", verBoleta);
 editarBtn?.addEventListener("click", editarPedido);
 completarBtn?.addEventListener("click", completarPedido);
 verPendientesBtn?.addEventListener("click", verPedidosPendientes);
-enviarWhatsappBtn?.addEventListener("click", enviarBoletaWhatsapp);
-guardarBtn?.addEventListener("click", guardarPedido); // 👈 AGREGA ESTA LÍNEA
+enviarBoletaBtn?.addEventListener("click", enviarBoleta);
+guardarBtn?.addEventListener("click", guardarPedido);
 
 
 // Event listener para iniciar la división de cuenta
