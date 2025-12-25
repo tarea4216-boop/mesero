@@ -1387,7 +1387,12 @@ let estadoAnteriorPedidos = {}; // firma anterior por producto
 let primeraCarga = true;
 
 function escucharPedidosListos() {
-  const pedidosRef = ref(db, "pedidos");
+  escucharNodo("pedidos");
+  escucharNodo("pedidosOnline");
+}
+
+function escucharNodo(ruta) {
+  const pedidosRef = ref(db, ruta);
 
   onValue(pedidosRef, (snapshot) => {
     const pedidos = snapshot.val() || {};
@@ -1400,7 +1405,7 @@ function escucharPedidosListos() {
         const total = item.cantidad || 1;
         const lista = item.cantidadLista || 0;
 
-        const clave = `${mesa}-${index}`;
+        const clave = `${ruta}-${mesa}-${index}`;
         const firmaActual = `${lista}/${total}`;
         const firmaAnterior = estadoAnteriorPedidos[clave];
 
@@ -1408,10 +1413,9 @@ function escucharPedidosListos() {
         const estabaListo =
           firmaAnterior && firmaAnterior.startsWith(`${total}/`);
 
-        // 🔔 SOLO cuando pasa de NO listo → listo
         if (!primeraCarga && ahoraListo && !estabaListo) {
           showToast(
-            `✅ Pedido listo: ${item.nombre} (Mesa ${mesa})`,
+            `✅ Pedido listo: ${item.nombre} (${ruta === "pedidos" ? "Mesa" : "Online"} ${mesa})`,
             "success"
           );
           reproducirSonidoPedidoListo();
@@ -1421,7 +1425,10 @@ function escucharPedidosListos() {
       });
     });
 
-    estadoAnteriorPedidos = nuevoEstado;
+    estadoAnteriorPedidos = {
+      ...estadoAnteriorPedidos,
+      ...nuevoEstado
+    };
     primeraCarga = false;
   });
 }
