@@ -1080,50 +1080,60 @@ function showActionModal(producto, saldo, maxUnidades, unitPrice) { // <-- Se a�
   });
 }
 
-// --- INICIO: AÑADIR ESTA FUNCIÓN COMPLETA ---
 async function finalizarDivision(pedido, mesa, formasPago) {
   if (!pedido || !mesa || !formasPago) {
-    return showToast("Error interno: Faltan datos para finalizar la división.", "error");
+    return showToast(
+      "Error interno: Faltan datos para finalizar la división.",
+      "error"
+    );
   }
 
   try {
     const timestamp = Date.now();
     const refHistorial = ref(db, "historial");
-    
-    // 1. Crear la entrada para el historial con el detalle de la división
+
+    // 1️⃣ Guardar en historial con el MISMO formato que completarPedido
     const historialEntry = {
-      ...pedido, // Incluye los items originales, total, etc.
-      fecha: timestamp,
-      pagadoPor: "Division de cuenta",
+      ...pedido,
+      mesa, // 🔑 CLAVE para WhatsApp
+      completadoEn: timestamp, // 🔑 MISMO campo que enviarBoletaWhatsapp
+      pagadoPor: "División de cuenta",
       division: {
         personas: formasPago.length,
         detalle: formasPago
       }
     };
 
-    // 2. Guardar el pedido completado en el historial
     await push(refHistorial, historialEntry);
 
-    // 3. Eliminar el pedido de la lista de pedidos activos
+    // 2️⃣ Eliminar pedido activo
     const refMesa = ref(db, "pedidos/" + mesa);
     await remove(refMesa);
 
-    // 4. Limpiar los datos temporales de la división
+    // 3️⃣ Limpiar datos temporales de división
     const refTemp = ref(db, "divisionTemporal/" + mesa);
-    await remove(refTemp).catch(() => {}); // Ignorar error si no existe
+    await remove(refTemp).catch(() => {});
     localStorage.removeItem("divisionTemporal_local_" + mesa);
 
-    // 5. Resetear el estado y la UI
+    // 4️⃣ Resetear estado global
     currentDivision = null;
-    showToast(`✅ División de mesa ${mesa} completada y archivada.`, "success");
-    limpiarCampos(); // Limpia los campos del panel principal
+    mesaSeleccionada = null; // 🔑 CLAVE (igual que completarPedido)
+
+    // 5️⃣ Refrescar UI desde Firebase
+    limpiarCampos();
+    renderMesas(); // 🔑 CLAVE
+
+    showToast(
+      `✅ División de mesa ${mesa} completada y archivada.`,
+      "success"
+    );
 
   } catch (error) {
     console.error("Error en finalizarDivision:", error);
     showToast("Error al archivar la división de cuenta.", "error");
   }
 }
-// --- FIN: AÑADIR ESTA FUNCIÓN COMPLETA ---
+
 
 
 // Función principal para mostrar división (similar a la versión previa pero con action modal)
