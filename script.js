@@ -936,24 +936,49 @@ async function verPedidosPendientes() {
 async function enviarBoletaWhatsapp() {
   const mesa = await prompt("Número de mesa:");
   const numero = await prompt("Número de WhatsApp del cliente (sin +51):");
-  if (!mesa || !numero || isNaN(numero)) return showToast("❌ Número de mesa o WhatsApp no válidos.", "error");
+
+  if (!mesa || !numero || isNaN(numero)) {
+    return showToast("❌ Número de mesa o WhatsApp no válidos.", "error");
+  }
+
   const refHistorial = ref(db, "historial");
   const snapshot = await get(refHistorial);
-  if (!snapshot.exists()) return showToast("❌ No hay historial de pedidos", "error");
+
+  if (!snapshot.exists()) {
+    return showToast("❌ No hay historial de pedidos", "error");
+  }
+
   const historial = Object.values(snapshot.val());
-  const recientes = historial.filter(p => p.mesa === mesa && Date.now() - p.fecha < 180000);
-  if (recientes.length === 0) return showToast("⚠️ No hay boleta reciente para esta mesa (menos de 3 min)", "info");
+
+  // ✅ USAR completadoEn
+  const recientes = historial.filter(
+    p => p.mesa == mesa && Date.now() - p.completadoEn < 180000
+  );
+
+  if (recientes.length === 0) {
+    return showToast(
+      "⚠️ No hay boleta reciente para esta mesa (menos de 3 min)",
+      "info"
+    );
+  }
+
   const boleta = recientes[recientes.length - 1];
+
   let texto = `🍽 *Boleta - Mesa ${mesa}*\n\n`;
+
   boleta.items.forEach((item, i) => {
     texto += `${i + 1}. ${item.nombre} x${item.cantidad}`;
     if (item.comentario) texto += ` (${item.comentario})`;
     texto += `\n`;
   });
-  texto += `\n💵 Total: S/ ${boleta.total.toFixed(2)}\n🕐 ${new Date(boleta.fecha).toLocaleString()}`;
+
+  texto += `\n💵 Total: S/ ${boleta.total.toFixed(2)}`;
+  texto += `\n🕐 ${new Date(boleta.completadoEn).toLocaleString()}`;
+
   const link = `https://wa.me/51${numero}?text=${encodeURIComponent(texto)}`;
   window.open(link, "_blank");
 }
+
 
 function cargarProductos() {
   const refProductos = ref(db, "productos");
