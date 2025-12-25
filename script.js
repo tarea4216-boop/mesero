@@ -933,13 +933,9 @@ async function verPedidosPendientes() {
 }
 
 
-async function enviarBoletaWhatsapp() {
+async function enviarBoleta() {
   const mesa = await prompt("Número de mesa:");
-  const numero = await prompt("Número de WhatsApp del cliente (sin +51):");
-
-  if (!mesa || !numero || isNaN(numero)) {
-    return showToast("❌ Número de mesa o WhatsApp no válidos.", "error");
-  }
+  if (!mesa) return;
 
   const refHistorial = ref(db, "historial");
   const snapshot = await get(refHistorial);
@@ -950,7 +946,7 @@ async function enviarBoletaWhatsapp() {
 
   const historial = Object.values(snapshot.val());
 
-  // ✅ USAR completadoEn
+  // 🔑 Buscar boleta reciente (3 minutos)
   const recientes = historial.filter(
     p => p.mesa == mesa && Date.now() - p.completadoEn < 180000
   );
@@ -964,7 +960,27 @@ async function enviarBoletaWhatsapp() {
 
   const boleta = recientes[recientes.length - 1];
 
-  let texto = `🍽 *Boleta - Mesa ${mesa}*\n\n`;
+  // 🔔 Elegir opción
+  const opcion = await prompt(
+    "Escribe una opción:\n1 = Enviar por WhatsApp\n2 = Descargar PDF"
+  );
+
+  if (opcion === "1") {
+    enviarBoletaPorWhatsapp(boleta);
+  } else if (opcion === "2") {
+    generarBoletaPDF(boleta);
+  } else {
+    showToast("❌ Opción no válida", "error");
+  }
+}
+
+async function enviarBoletaPorWhatsapp(boleta) {
+  const numero = await prompt("Número de WhatsApp del cliente (sin +51):");
+  if (!numero || isNaN(numero)) {
+    return showToast("❌ Número de WhatsApp no válido", "error");
+  }
+
+  let texto = `🍽 *Boleta - Mesa ${boleta.mesa}*\n\n`;
 
   boleta.items.forEach((item, i) => {
     texto += `${i + 1}. ${item.nombre} x${item.cantidad}`;
@@ -978,6 +994,109 @@ async function enviarBoletaWhatsapp() {
   const link = `https://wa.me/51${numero}?text=${encodeURIComponent(texto)}`;
   window.open(link, "_blank");
 }
+
+function generarBoletaPDF(boleta) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF("p", "mm", "a4");
+
+  // ================================
+  // 🟨 CABECERA
+  // ================================
+  doc.setFillColor(255, 184, 28);
+  doc.rect(0, 0, 210, 32, "F");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(22);
+  doc.setTextColor(50, 32, 0);
+  doc.text("El Camarón de Oro", 15, 20);
+
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "normal");
+  doc.text("Comprobante de Pedido", 195, 20, { align: "right" });
+
+  doc.setDrawColor(180, 180, 180);
+  doc.line(10, 36, 200, 36);
+
+  // ================================
+  // 📝 DATOS
+  // ================================
+  let y = 48;
+  doc.setTextColor(60, 60, 60);
+  doc.setFontSize(12);
+
+  const datos = [
+    `Mesa: ${boleta.mesa}`,
+    `Fecha: ${new Date(boleta.completadoEn).toLocaleString()}`,
+    `Atendido por: ${boleta.mesero || "—"}`
+  ];
+
+  datos.forEach(t => {
+    doc.text(t, 15, y);
+    y += 7;
+  });
+
+  doc.line(10, y + 4, 200, y + 4);
+  y += 15;
+
+  // ================================
+  // 🍽️ ITEMS
+  // ================================
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.text("Detalle del Pedido", 15, y);
+  y += 10;
+
+  doc.setFontSize(12);
+  doc.text("Producto", 15, y);
+  doc.text("Cant.", 120, y);
+  doc.text("Subtotal", 195, y, { align: "right" });
+  y += 5;
+
+  doc.line(10, y, 200, y);
+  y += 7;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+
+  boleta.items.forEach(it => {
+    doc.text(it.nombre, 15, y);
+    doc.text(String(it.cantidad), 120, y);
+    doc.text(
+      `S/ ${(it.precio * it.cantidad).toFixed(2)}`,
+      195,
+      y,
+      { align: "right" }
+    );
+    y += 7;
+  });
+
+  // ================================
+  // 💳 TOTAL
+  // ================================
+  y += 10;
+  doc.setFillColor(255, 236, 180);
+  doc.roundedRect(10, y, 190, 14, 3, 3, "F");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(60, 40, 0);
+  doc.text(`TOTAL:  S/ ${boleta.total.toFixed(2)}`, 20, y + 10);
+
+  // ================================
+  // ❤️ PIE
+  // ================================
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(100, 100, 100);
+  doc.text(
+    "Gracias por confiar en nosotros ❤️\nEl Camarón de Oro – Sabor que te acompaña",
+    15,
+    275
+  );
+
+  doc.save(`Boleta_Mesa_${boleta.mesa}.pdf`);
+}
+
 
 
 function cargarProductos() {
