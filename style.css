@@ -1706,9 +1706,15 @@ li:hover { background-color: var(--borde); }
 /* ================== MESAS ================== */
 .mesas-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 12px;
   margin-bottom: 16px;
+}
+
+
+.mesas-grid {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 }
 
 .mesa-btn {
@@ -1954,8 +1960,7 @@ li:hover { background-color: var(--borde); }
 
 
 
-/* ================= RESPONSIVE ================= */
-
+/* ================= RESPONSIVE MODALES ================= */
 @media (max-width: 480px) {
   .pedido-producto-row {
     flex-direction: column;
@@ -1967,3 +1972,20 @@ li:hover { background-color: var(--borde); }
     align-self: flex-end;
   }
 }
+
+/* ================= RESPONSIVE MESAS ================= */
+@media (max-width: 768px) {
+  .mesas-grid {
+    grid-template-columns: repeat(4, 1fr);
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .mesa-btn {
+    padding: 16px 0;
+    font-size: 14px;
+    border-radius: 12px;
+  }
+}
+
