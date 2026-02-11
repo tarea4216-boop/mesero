@@ -474,26 +474,26 @@ async function abrirModalBoleta(mesa) {
           return;
         }
 
-       if (action === "plus") {
-  pedido[idx].cantidad++;
+        if (action === "plus") {
+          pedido[idx].cantidad++;
 
-  // 🔧 CLAVE: si ya había productos listos, NO tocar cantidadLista
-  if (typeof pedido[idx].cantidadLista !== "number") {
-    pedido[idx].cantidadLista = 0;
-  }
-}
+          // 🔧 CLAVE: si ya había productos listos, NO tocar cantidadLista
+          if (typeof pedido[idx].cantidadLista !== "number") {
+            pedido[idx].cantidadLista = 0;
+          }
+        }
 
-       if (action === "minus" && pedido[idx].cantidad > 1) {
-  pedido[idx].cantidad--;
+        if (action === "minus" && pedido[idx].cantidad > 1) {
+          pedido[idx].cantidad--;
 
-  // Ajuste de seguridad
-  if (
-    typeof pedido[idx].cantidadLista === "number" &&
-    pedido[idx].cantidadLista > pedido[idx].cantidad
-  ) {
-    pedido[idx].cantidadLista = pedido[idx].cantidad;
-  }
-}
+          // Ajuste de seguridad
+          if (
+            typeof pedido[idx].cantidadLista === "number" &&
+            pedido[idx].cantidadLista > pedido[idx].cantidad
+          ) {
+            pedido[idx].cantidadLista = pedido[idx].cantidad;
+          }
+        }
 
         if (action === "delete") pedido.splice(idx, 1);
 
@@ -522,8 +522,6 @@ async function abrirModalBoleta(mesa) {
 
   render();
 }
-
-
 
 // -------------------- PRODUCTOS & PEDIDOS --------------------
 
@@ -649,10 +647,15 @@ async function guardarPedido() {
     let pedidoFinal = [];
     let meseroAsignado = currentMeseroEmail;
 
+    // 🔧 FIX URGENCIA: conservar creadoEn del pedido
+    let creadoEnPedido = Date.now();
+
     if (snapshot.exists()) {
       const datos = snapshot.val();
       pedidoFinal = [...(datos.items || [])];
       meseroAsignado = datos.mesero || currentMeseroEmail;
+
+      creadoEnPedido = datos.creadoEn || creadoEnPedido;
 
       pedidoNuevo.forEach(nuevo => {
         const encontrado = pedidoFinal.find(
@@ -680,6 +683,7 @@ async function guardarPedido() {
       total: totalCalc,
       items: pedidoFinal,
       mesero: meseroAsignado,
+      creadoEn: creadoEnPedido, // 🔧 FIX URGENCIA
       actualizadoPor: currentMeseroEmail,
       actualizadoEn: Date.now()
     });
