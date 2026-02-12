@@ -404,12 +404,17 @@ async function abrirModalBoleta(mesa) {
   }
 
   const datos = snapshot.val();
-  let pedido = [...datos.items];
+  let pedido = [...(datos.items || [])];
+
+  // 🔧 Blindaje: asegurar que todos los items tengan creadoEn
+  pedido = pedido.map(item => ({
+    ...item,
+    creadoEn: item.creadoEn || datos.creadoEn || Date.now()
+  }));
 
   function puedeEditar(item) {
-    if (!item.creadoEn) return false;
     const diezMin = 10 * 60 * 1000;
-    return Date.now() - item.creadoEn <= diezMin;
+    return item.creadoEn && (Date.now() - item.creadoEn <= diezMin);
   }
 
   function render() {
@@ -463,7 +468,6 @@ async function abrirModalBoleta(mesa) {
 
     modal.innerHTML = html;
 
-    // Acciones
     modal.querySelectorAll("button[data-action]").forEach(btn => {
       btn.onclick = () => {
         const idx = parseInt(btn.dataset.index);
@@ -476,8 +480,6 @@ async function abrirModalBoleta(mesa) {
 
         if (action === "plus") {
           pedido[idx].cantidad++;
-
-          // 🔧 CLAVE: si ya había productos listos, NO tocar cantidadLista
           if (typeof pedido[idx].cantidadLista !== "number") {
             pedido[idx].cantidadLista = 0;
           }
@@ -485,8 +487,6 @@ async function abrirModalBoleta(mesa) {
 
         if (action === "minus" && pedido[idx].cantidad > 1) {
           pedido[idx].cantidad--;
-
-          // Ajuste de seguridad
           if (
             typeof pedido[idx].cantidadLista === "number" &&
             pedido[idx].cantidadLista > pedido[idx].cantidad
@@ -527,7 +527,6 @@ async function abrirModalBoleta(mesa) {
 
 let productoSeleccionado = null;
 
-// 🔹 Mesa activa
 function obtenerMesaActiva() {
   if (!mesaSeleccionada) {
     showToast("Selecciona una mesa", "error");
@@ -536,7 +535,6 @@ function obtenerMesaActiva() {
   return mesaSeleccionada;
 }
 
-// 🔹 Total
 function actualizarTotal(mesa) {
   const pedido = pedidosLocales[mesa] || [];
   total = pedido.reduce(
@@ -546,7 +544,6 @@ function actualizarTotal(mesa) {
   totalTexto.textContent = `Total: S/ ${total.toFixed(2)}`;
 }
 
-// 🔹 Buscar productos
 buscarInput?.addEventListener("input", () => {
   const texto = buscarInput.value.toLowerCase();
   lista.innerHTML = "";
@@ -564,7 +561,6 @@ buscarInput?.addEventListener("input", () => {
     });
 });
 
-// 🔹 Al seleccionar producto → abrir modal
 function seleccionarProducto(producto) {
   const mesa = obtenerMesaActiva();
   if (!mesa) return;
@@ -580,7 +576,6 @@ function seleccionarProducto(producto) {
   document.getElementById("modalAgregarProducto").style.display = "flex";
 }
 
-// 🔹 Confirmar agregar producto
 document
   .getElementById("confirmarAgregarProducto")
   .addEventListener("click", () => {
@@ -602,34 +597,23 @@ document
     if (!pedidosLocales[mesa]) pedidosLocales[mesa] = [];
     const pedido = pedidosLocales[mesa];
 
-    const existente = pedido.find(
-      p =>
-        p.nombre === productoSeleccionado.nombre &&
-        p.comentario === comentario
-    );
-
-    if (existente) {
-      existente.cantidad += cant;
-    } else {
-      pedido.push({
-        ...productoSeleccionado,
-        cantidad: cant,
-        comentario,
-        creadoEn: Date.now()
-      });
-    }
+    // 🔧 IMPORTANTE: NO mezclar timestamps diferentes
+    pedido.push({
+      ...productoSeleccionado,
+      cantidad: cant,
+      comentario,
+      creadoEn: Date.now()
+    });
 
     actualizarTotal(mesa);
     cerrarModalAgregarProducto();
   });
 
-// 🔹 Cerrar modal
 function cerrarModalAgregarProducto() {
   document.getElementById("modalAgregarProducto").style.display = "none";
   productoSeleccionado = null;
 }
 
-// 🔹 Guardar pedido
 async function guardarPedido() {
   const mesa = obtenerMesaActiva();
   if (!mesa) return;
@@ -646,32 +630,22 @@ async function guardarPedido() {
 
     let pedidoFinal = [];
     let meseroAsignado = currentMeseroEmail;
-
-    // 🔧 FIX URGENCIA: conservar creadoEn del pedido
     let creadoEnPedido = Date.now();
 
     if (snapshot.exists()) {
       const datos = snapshot.val();
       pedidoFinal = [...(datos.items || [])];
       meseroAsignado = datos.mesero || currentMeseroEmail;
-
       creadoEnPedido = datos.creadoEn || creadoEnPedido;
-
-      pedidoNuevo.forEach(nuevo => {
-        const encontrado = pedidoFinal.find(
-          p =>
-            p.nombre === nuevo.nombre &&
-            p.comentario === nuevo.comentario
-        );
-        if (encontrado) {
-          encontrado.cantidad += nuevo.cantidad;
-        } else {
-          pedidoFinal.push(nuevo);
-        }
-      });
-    } else {
-      pedidoFinal = pedidoNuevo;
     }
+
+    // 🔧 Agregar nuevos productos SIN mezclar timestamps
+    pedidoNuevo.forEach(nuevo => {
+      pedidoFinal.push({
+        ...nuevo,
+        creadoEn: nuevo.creadoEn || Date.now()
+      });
+    });
 
     const totalCalc = pedidoFinal.reduce(
       (acc, item) => acc + (item.precio || 0) * item.cantidad,
@@ -683,7 +657,7 @@ async function guardarPedido() {
       total: totalCalc,
       items: pedidoFinal,
       mesero: meseroAsignado,
-      creadoEn: creadoEnPedido, // 🔧 FIX URGENCIA
+      creadoEn: creadoEnPedido,
       actualizadoPor: currentMeseroEmail,
       actualizadoEn: Date.now()
     });
@@ -747,18 +721,27 @@ async function verBoleta() {
 async function editarPedido() {
   const mesa = await prompt("Mesa a editar:");
   if (!mesa) return;
+
   const refMesa = ref(db, "pedidos/" + mesa);
   const snapshot = await get(refMesa);
-  if (!snapshot.exists()) return showToast("❌ No hay pedido", "error");
+
+  if (!snapshot.exists()) 
+    return showToast("❌ No hay pedido", "error");
+
   const datos = snapshot.val();
   let pedido = datos.items;
+
   function renderEdit(pedidoArray) {
     let html = `<div class="custom-modal-message"><strong>Editar pedido de mesa ${mesa}</strong></div>`;
     html += `<div style="margin-bottom:16px;">`;
+
     pedidoArray.forEach((p, i) => {
       html += `
         <div class="editar-producto-row">
-          <span class="editar-producto-nombre"><strong>${p.nombre}</strong> ${p.comentario ? `<span style="color:#ad1457;">(${p.comentario})</span>` : ""}</span>
+          <span class="editar-producto-nombre">
+            <strong>${p.nombre}</strong> 
+            ${p.comentario ? `<span style="color:#ad1457;">(${p.comentario})</span>` : ""}
+          </span>
           <button class="custom-modal-btn editar-producto-btn" data-action="minus" data-index="${i}">-</button>
           <span class="editar-producto-cantidad">${p.cantidad}</span>
           <button class="custom-modal-btn editar-producto-btn" data-action="plus" data-index="${i}">+</button>
@@ -766,44 +749,66 @@ async function editarPedido() {
         </div>
       `;
     });
+
     html += `</div>
       <button class="custom-modal-btn" id="guardarCambiosPedido">Guardar cambios</button>
       <button class="custom-modal-btn cancel" id="cancelarEdicionPedido">Cancelar</button>
     `;
+
     const modal = createModal(html);
+
     modal.querySelectorAll("button[data-action]").forEach(btn => {
       btn.onclick = () => {
         const idx = parseInt(btn.getAttribute("data-index"));
         const action = btn.getAttribute("data-action");
+
         if (action === "plus") {
           pedidoArray[idx].cantidad++;
+
         } else if (action === "minus") {
-          if (pedidoArray[idx].cantidad > 1) pedidoArray[idx].cantidad--;
+          if (pedidoArray[idx].cantidad > 1) 
+            pedidoArray[idx].cantidad--;
+
         } else if (action === "delete") {
           pedidoArray.splice(idx, 1);
         }
+
         document.body.removeChild(modal);
         renderEdit(pedidoArray);
       };
     });
+
     modal.querySelector("#guardarCambiosPedido").onclick = async () => {
+
+      // 🔧 CONSERVAR creadoEn ORIGINAL DEL PEDIDO
+      const creadoEnPedido = datos.creadoEn || Date.now();
+
       await set(refMesa, {
         mesa,
-        total: pedidoArray.reduce((acc, i) => acc + (i.precio || 0) * (i.cantidad || 1), 0),
+        total: pedidoArray.reduce(
+          (acc, i) => acc + (i.precio || 0) * (i.cantidad || 1),
+          0
+        ),
         items: pedidoArray,
         mesero: datos.mesero,
+        creadoEn: creadoEnPedido, // 🔧 NO SE REINICIA
+        actualizadoEn: Date.now(), // 🔧 SOLO ACTUALIZA MODIFICACIÓN
         modificadoPor: currentMeseroEmail
       });
+
       document.body.removeChild(modal);
       showToast("✏ Pedido actualizado", "success");
       limpiarCampos();
     };
+
     modal.querySelector("#cancelarEdicionPedido").onclick = () => {
       document.body.removeChild(modal);
     };
   }
+
   renderEdit(pedido);
 }
+
 
 async function completarPedido() {
   const mesa = await prompt("Número de mesa a completar:");
