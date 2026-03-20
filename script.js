@@ -87,9 +87,6 @@ const editarBtn = document.getElementById("editarBtn");
 const completarBtn = document.getElementById("completarBtn");
 const verPendientesBtn = document.getElementById("verPendientesBtn");
 const enviarBoletaBtn = document.getElementById("enviarBoletaBtn");
-const dividirCuentaBtn = document.getElementById("dividirCuentaBtn");
-
-const contenedorFormasPago = document.getElementById("contenedorFormasPago");
 
 // -------------------- EVENT LISTENERS --------------------
 verBoletaBtn?.addEventListener("click", verBoleta);
